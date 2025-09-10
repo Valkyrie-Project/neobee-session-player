@@ -207,12 +207,12 @@ struct PlayerView: View {
 
                 // Audio track quick toggle: 原唱(0) / 伴奏(1)
                 HStack(spacing: 8) {
-                    Button(controller.audioTrackNames.indices.contains(0) ? (controller.audioTrackNames[0].isEmpty ? "原唱" : controller.audioTrackNames[0]) : "原唱") { controller.selectOriginalTrack() }
+                    Button("原唱") { controller.selectOriginalTrack() }
                         .disabled(controller.originalTrackId == nil)
                         .buttonStyle(.bordered)
                         .tint(controller.currentAudioTrackId == controller.originalTrackId ? .accentColor : .gray)
 
-                    Button(controller.audioTrackNames.indices.contains(1) ? (controller.audioTrackNames[1].isEmpty ? "伴奏" : controller.audioTrackNames[1]) : "伴奏") { controller.selectAccompanimentTrack() }
+                    Button("伴奏") { controller.selectAccompanimentTrack() }
                         .disabled(controller.accompanimentTrackId == nil)
                         .buttonStyle(.bordered)
                         .tint(controller.currentAudioTrackId == controller.accompanimentTrackId ? .accentColor : .gray)
