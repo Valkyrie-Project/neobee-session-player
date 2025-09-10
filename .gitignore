@@ -1,0 +1,23 @@
+# Xcode
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+*.xcscmblueprint
+*.xcworkspacedata
+*.xccheckout
+
+# User data
+**/xcuserdata/
+
+# CocoaPods
+Pods/
+!Podfile
+!Podfile.lock
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Logs
+*.log
