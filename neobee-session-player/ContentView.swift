@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import VLCKit
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -17,26 +18,7 @@ struct ContentView: View {
     private var items: FetchedResults<Item>
 
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-            Text("Select an item")
-        }
+        PlayerView()
     }
 
     private func addItem() {
