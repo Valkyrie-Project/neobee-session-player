@@ -6,6 +6,9 @@ import VLCKit
 final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDelegate {
     @Published var isPlaying: Bool = false
     @Published var currentURL: URL?
+    @Published var audioTrackIds: [Int32] = []
+    @Published var currentAudioTrackId: Int32? = nil
+    @Published var audioTrackNames: [String] = []
 
     private let mediaPlayer: VLCMediaPlayer
     let videoView: VLCVideoView
@@ -32,6 +35,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.isPlaying = self.mediaPlayer.isPlaying
+            self.refreshAudioTracks()
         }
     }
 
@@ -55,6 +59,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         let media = VLCMedia(url: url)
         mediaPlayer.media = media
         mediaPlayer.play()
+        // Refresh tracks shortly after playback starts
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.refreshAudioTracks()
+        }
     }
 
     func play() {
@@ -68,6 +76,72 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     func stop() {
         mediaPlayer.stop()
         isPlaying = false
+    }
+
+    func refreshAudioTracks() {
+        // Read raw arrays
+        let rawIds: [Int32] = (mediaPlayer.audioTrackIndexes as? [NSNumber])?.map { Int32(truncating: $0) } ?? []
+        let rawNames: [String] = (mediaPlayer.audioTrackNames as? [String]) ?? []
+
+        // If we get a transient empty response while playing, keep previous values and retry shortly
+        if mediaPlayer.isPlaying && rawIds.isEmpty && rawNames.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.refreshAudioTracks()
+            }
+            logAudioTracks(context: "refresh-skip-empty")
+            return
+        }
+
+        // Align names to ids length, then filter out invalid ids and the built-in "Disable" entry
+        let alignedNames = Array(rawNames.prefix(rawIds.count))
+        var filteredIds: [Int32] = []
+        var filteredNames: [String] = []
+        for (idx, id) in rawIds.enumerated() {
+            guard id >= 0 else { continue }
+            let name = idx < alignedNames.count ? alignedNames[idx] : ""
+            if name.trimmingCharacters(in: .whitespacesAndNewlines).localizedCaseInsensitiveContains("disable") {
+                continue
+            }
+            filteredIds.append(id)
+            filteredNames.append(name)
+        }
+
+        audioTrackIds = filteredIds
+        audioTrackNames = filteredNames
+
+        let current: Int32 = mediaPlayer.currentAudioTrackIndex
+        currentAudioTrackId = current >= 0 ? current : nil
+
+        logAudioTracks(context: "refresh")
+    }
+
+    var originalTrackId: Int32? { audioTrackIds.indices.contains(0) ? audioTrackIds[0] : nil }
+    var accompanimentTrackId: Int32? { audioTrackIds.indices.contains(1) ? audioTrackIds[1] : nil }
+
+    func selectOriginalTrack() {
+        if let id = originalTrackId {
+            mediaPlayer.currentAudioTrackIndex = id
+            mediaPlayer.audio?.isMuted = false
+            currentAudioTrackId = id
+            logAudioTracks(context: "select-original")
+        }
+    }
+
+    func selectAccompanimentTrack() {
+        if let id = accompanimentTrackId {
+            mediaPlayer.currentAudioTrackIndex = id
+            mediaPlayer.audio?.isMuted = false
+            currentAudioTrackId = id
+            logAudioTracks(context: "select-accompaniment")
+        }
+    }
+
+    private func logAudioTracks(context: String) {
+        let ids = audioTrackIds.map { String($0) }.joined(separator: ", ")
+        let names = audioTrackNames.joined(separator: ", ")
+        let current = currentAudioTrackId.map { String($0) } ?? "nil"
+        let muted = mediaPlayer.audio?.isMuted ?? false
+        print("[Audio][\(context)] ids=[\(ids)] names=[\(names)] current=\(current) muted=\(muted)")
     }
 }
 
@@ -111,6 +185,19 @@ struct PlayerView: View {
                 .disabled(controller.currentURL == nil)
 
                 Spacer()
+
+                // Audio track quick toggle: 原唱(0) / 伴奏(1)
+                HStack(spacing: 8) {
+                    Button(controller.audioTrackNames.indices.contains(0) ? (controller.audioTrackNames[0].isEmpty ? "原唱" : controller.audioTrackNames[0]) : "原唱") { controller.selectOriginalTrack() }
+                        .disabled(controller.originalTrackId == nil)
+                        .buttonStyle(.bordered)
+                        .tint(controller.currentAudioTrackId == controller.originalTrackId ? .accentColor : .gray)
+
+                    Button(controller.audioTrackNames.indices.contains(1) ? (controller.audioTrackNames[1].isEmpty ? "伴奏" : controller.audioTrackNames[1]) : "伴奏") { controller.selectAccompanimentTrack() }
+                        .disabled(controller.accompanimentTrackId == nil)
+                        .buttonStyle(.bordered)
+                        .tint(controller.currentAudioTrackId == controller.accompanimentTrackId ? .accentColor : .gray)
+                }
 
                 if let url = controller.currentURL {
                     Text(url.lastPathComponent)
