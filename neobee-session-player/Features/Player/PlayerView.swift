@@ -202,6 +202,11 @@ struct PlayerView: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            // Compute dynamic minimum size from the video's intrinsic size
+            let intrinsic = controller.videoSize.width > 0 && controller.videoSize.height > 0
+                ? controller.videoSize
+                : CGSize(width: 800, height: 450)
+
             GeometryReader { geo in
                 ZStack {
                     Color.black
@@ -211,16 +216,25 @@ struct PlayerView: View {
                     let videoW = max(controller.videoSize.width, 16)
                     let videoH = max(controller.videoSize.height, 9)
                     let aspect = videoW / videoH
-                    // Fit-to-width: fill left/right fully, compute height by aspect
-                    let finalW = containerW
-                    let finalH = finalW / aspect
+                    // Prefer fit-to-width, but cap by available height to avoid overlapping controls
+                    let widthFitH = containerW / aspect
+                    let (finalW, finalH): (CGFloat, CGFloat) = {
+                        if widthFitH <= containerH {
+                            return (containerW, widthFitH)
+                        } else {
+                            // Fit-to-height fallback (side bars) when width-fit would exceed available height
+                            let h = containerH
+                            let w = h * aspect
+                            return (w, h)
+                        }
+                    }()
                     VLCVideoContainerView(controller: controller)
                         .frame(width: finalW, height: finalH)
                         .position(x: geo.size.width / 2, y: geo.size.height / 2)
                         .clipped()
                 }
             }
-            .frame(minWidth: 800, minHeight: 450)
+            .frame(minWidth: intrinsic.width, minHeight: intrinsic.height)
 
             HStack(spacing: 12) {
                 Button("Open…") {
