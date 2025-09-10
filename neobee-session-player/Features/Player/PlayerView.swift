@@ -9,6 +9,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     @Published var audioTrackIds: [Int32] = []
     @Published var currentAudioTrackId: Int32? = nil
     @Published var audioTrackNames: [String] = []
+    @Published var videoSize: CGSize = .zero
 
     private let mediaPlayer: VLCMediaPlayer
     // Single-player approach: no secondary player, no sync timer
@@ -38,7 +39,22 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.isPlaying = self.mediaPlayer.isPlaying
+            // capture current video size if available
+            let size = self.mediaPlayer.videoSize
+            if size.width > 0 && size.height > 0 {
+                self.videoSize = size
+            }
             self.refreshAudioTracks()
+        }
+    }
+
+    func mediaPlayerTimeChanged(_ aNotification: Notification) {
+        // lazily update video size once it becomes known
+        let size = mediaPlayer.videoSize
+        if size.width > 0 && size.height > 0 && size != videoSize {
+            DispatchQueue.main.async { [weak self] in
+                self?.videoSize = size
+            }
         }
     }
 
@@ -65,6 +81,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         // Refresh tracks shortly after playback starts
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.refreshAudioTracks()
+            // also try to read video size shortly after start
+            if let size = self?.mediaPlayer.videoSize, size.width > 0 && size.height > 0 {
+                self?.videoSize = size
+            }
         }
     }
 
@@ -182,9 +202,23 @@ struct PlayerView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ZStack {
-                VLCVideoContainerView(controller: controller)
-                    .background(Color.black)
+            GeometryReader { geo in
+                ZStack {
+                    Color.black
+                    // Maintain left/right fit, letterbox top/bottom
+                    let containerW = max(geo.size.width, 1)
+                    let containerH = max(geo.size.height, 1)
+                    let videoW = max(controller.videoSize.width, 16)
+                    let videoH = max(controller.videoSize.height, 9)
+                    let aspect = videoW / videoH
+                    // Fit-to-width: fill left/right fully, compute height by aspect
+                    let finalW = containerW
+                    let finalH = finalW / aspect
+                    VLCVideoContainerView(controller: controller)
+                        .frame(width: finalW, height: finalH)
+                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                        .clipped()
+                }
             }
             .frame(minWidth: 800, minHeight: 450)
 
@@ -224,6 +258,9 @@ struct PlayerView: View {
                 }
             }
             .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .zIndex(1)
         }
         .padding(.bottom)
     }
