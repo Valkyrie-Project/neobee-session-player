@@ -11,6 +11,9 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     @Published var audioTrackNames: [String] = []
 
     private let mediaPlayer: VLCMediaPlayer
+    // Single-player approach: no secondary player, no sync timer
+    private var lastAudioLogSignature: String?
+    private var lastAudioLogAt: Date = .distantPast
     let videoView: VLCVideoView
 
     override init() {
@@ -109,8 +112,14 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         audioTrackIds = filteredIds
         audioTrackNames = filteredNames
 
+        // Update current selection from main player state
         let current: Int32 = mediaPlayer.currentAudioTrackIndex
         currentAudioTrackId = current >= 0 ? current : nil
+
+        // Ensure main player uses a valid track if available
+        if let a = originalTrackId, currentAudioTrackId == nil {
+            mediaPlayer.currentAudioTrackIndex = a
+        }
 
         logAudioTracks(context: "refresh")
     }
@@ -141,8 +150,18 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         let names = audioTrackNames.joined(separator: ", ")
         let current = currentAudioTrackId.map { String($0) } ?? "nil"
         let muted = mediaPlayer.audio?.isMuted ?? false
-        print("[Audio][\(context)] ids=[\(ids)] names=[\(names)] current=\(current) muted=\(muted)")
+        let signature = "ids=[\(ids)] names=[\(names)] current=\(current) muted=\(muted)"
+        let now = Date()
+        // Only print when state actually changes, and avoid printing more than once per second
+        if signature == lastAudioLogSignature && now.timeIntervalSince(lastAudioLogAt) < 1.0 {
+            return
+        }
+        lastAudioLogSignature = signature
+        lastAudioLogAt = now
+        print("[Audio][\(context)] \(signature)")
     }
+
+    // Single-player approach: no sync timer needed
 }
 
 struct VLCVideoContainerView: NSViewRepresentable {
