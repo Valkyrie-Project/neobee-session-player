@@ -24,18 +24,76 @@ struct AudioTrackSelector: View {
     @State private var selectedTrack: Int = 0
     
     var body: some View {
-        Picker("音轨选择", selection: $selectedTrack) {
-            Text("原唱").tag(0)
-            Text("伴奏").tag(1)
-        }
-        .pickerStyle(.segmented)
-        .disabled(controller.originalTrackId == nil && controller.accompanimentTrackId == nil)
-        .onChange(of: selectedTrack) { _, newValue in
-            if newValue == 0 {
+        HStack(spacing: 2) {
+            // 原唱按钮
+            Button(action: {
+                selectedTrack = 0
                 controller.selectOriginalTrack()
-            } else {
-                controller.selectAccompanimentTrack()
+            }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "person.wave.2")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("原唱")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(selectedTrack == 0 ? Color.accentColor : Color.clear)
+                )
+                .foregroundStyle(
+                    selectedTrack == 0 ? 
+                    .white : 
+                    .primary
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(
+                            selectedTrack == 0 ? 
+                            Color.clear : 
+                            Color.secondary.opacity(0.3), 
+                            lineWidth: 1
+                        )
+                )
             }
+            .buttonStyle(.plain)
+            .disabled(controller.originalTrackId == nil)
+            
+            // 伴奏按钮
+            Button(action: {
+                selectedTrack = 1
+                controller.selectAccompanimentTrack()
+            }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 11, weight: .medium))
+                    Text("伴奏")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(selectedTrack == 1 ? Color.accentColor : Color.clear)
+                )
+                .foregroundStyle(
+                    selectedTrack == 1 ? 
+                    .white : 
+                    .primary
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(
+                            selectedTrack == 1 ? 
+                            Color.clear : 
+                            Color.secondary.opacity(0.3), 
+                            lineWidth: 1
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(controller.accompanimentTrackId == nil)
         }
         .onAppear {
             // 根据当前播放的音轨设置选择器状态
@@ -104,28 +162,22 @@ struct ControlOverlay: View {
         VStack {
             Spacer()
             
-            // Main control panel
-            VStack(spacing: 12) {
-                // Progress bar with current time and duration, seekable
-                ProgressSeekBar()
-                
-                HStack(spacing: 20) {
+            // Main control panel - single row layout
+            HStack(spacing: 16) {
                 // Play/Pause button
                 PlayPauseButton()
                 
-                Spacer()
+                // Progress bar with current time and duration, seekable
+                ProgressSeekBar()
                 
                 // Audio track selector
                 AudioTrackSelector()
                 
-                Spacer()
-                
                 // Secondary controls
                 SecondaryControls()
-                    
-                    // Volume slider
-                    VolumeControl()
-                }
+                
+                // Volume slider
+                VolumeControl()
             }
             .padding()
             .background(ControlBackground())
@@ -159,11 +211,11 @@ struct ProgressSeekBar: View {
             if isScrubbing { return localProgress }
             return Double(controller.currentPosition)
         }()
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Text(formatTime(controller.currentTimeMs))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(width: 48, alignment: .leading)
+                .frame(width: 40, alignment: .leading)
             Slider(value: Binding<Double>(
                 get: { progress },
                 set: { newValue in
@@ -171,6 +223,7 @@ struct ProgressSeekBar: View {
                     localProgress = newValue
                 }
             ), in: 0...1)
+            .frame(minWidth: 120, maxWidth: 200)
             .onChange(of: localProgress) { _, newValue in
                 // Throttle seek calls during dragging
                 controller.seek(toProgress: Float(newValue))
@@ -184,7 +237,7 @@ struct ProgressSeekBar: View {
             Text(formatTime(controller.durationMs))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(width: 48, alignment: .trailing)
+                .frame(width: 40, alignment: .trailing)
         }
         .disabled(controller.currentURL == nil)
         .onChange(of: controller.currentURL) { _, _ in
