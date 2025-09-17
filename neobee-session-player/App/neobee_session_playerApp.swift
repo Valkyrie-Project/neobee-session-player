@@ -30,7 +30,6 @@ struct neobee_session_playerApp: App {
                     }
                 }
         }
-        .windowTitle("NeoBee KTV播放器")
     }
     
     private func restoreSecurityScopedBookmarks() {
@@ -72,6 +71,15 @@ struct neobee_session_playerApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Set window title when app finishes launching
+        DispatchQueue.main.async {
+            if let window = NSApplication.shared.windows.first {
+                window.title = "NeoBee KTV播放器"
+            }
+        }
+    }
+    
     func applicationWillTerminate(_ notification: Notification) {
         VLCPlayerController.shared.stop()
     }
