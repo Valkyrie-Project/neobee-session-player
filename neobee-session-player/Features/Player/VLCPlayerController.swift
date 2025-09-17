@@ -137,6 +137,14 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     func pause() {
         mediaPlayer.pause()
     }
+    
+    func togglePlayPause() {
+        if isPlaying {
+            pause()
+        } else {
+            play()
+        }
+    }
 
     func stop() {
         mediaPlayer.stop()

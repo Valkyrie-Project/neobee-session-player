@@ -73,8 +73,13 @@ struct ContentView: View {
         }
         .focusable()
         .onKeyPress { keyPress in
+            // Space key for play/pause
+            if keyPress.characters == " " {
+                VLCPlayerController.shared.togglePlayPause()
+                return .handled
+            }
             // F key for full screen toggle
-            if keyPress.characters == "f" {
+            else if keyPress.characters == "f" {
                 if let window = NSApp.keyWindow {
                     window.toggleFullScreen(nil)
                 }
