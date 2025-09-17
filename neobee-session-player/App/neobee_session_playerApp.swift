@@ -30,6 +30,7 @@ struct neobee_session_playerApp: App {
                     }
                 }
         }
+        .windowTitle("NeoBee KTV播放器")
     }
     
     private func restoreSecurityScopedBookmarks() {
