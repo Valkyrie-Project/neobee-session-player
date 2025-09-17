@@ -51,18 +51,31 @@
 1. **获取项目**
 
    ```bash
+   git clone https://github.com/Valkyrie-Project/neobee-session-player.git
    cd neobee-ktv-session/neobee-session-player
    ```
 
-2. **安装依赖**
+2. **自动构建和分发**
 
    ```bash
-   pod install
+   # 一键构建并创建DMG安装包
+   ./create_dmg.sh
    ```
 
-3. **打开项目**
+   脚本会自动：
+
+   - 检查并安装 CocoaPods 依赖
+   - 构建 Release 版本
+   - 创建包含 VLCKit 的 DMG 安装包
+   - 验证 VLCKit 正确嵌入
+
+3. **手动开发环境设置**
 
    ```bash
+   # 安装依赖
+   pod install
+
+   # 打开项目
    open neobee-session-player.xcworkspace
    ```
 
@@ -82,10 +95,37 @@
 
 5. **快捷键**: 空格键播放/暂停，F 键全屏切换
 
+## 📦 分发方法
+
+### 创建分发包
+
+使用内置的构建脚本创建 DMG 安装包：
+
+```bash
+./create_dmg.sh
+```
+
+生成的 `NeoBee-KTV-Player.dmg` 文件包含：
+
+- 完整的应用程序（约 38MB）
+- 嵌入的 VLCKit 框架
+- Applications 文件夹快捷方式
+- 支持 Intel 和 Apple Silicon Mac
+
+### 分发给朋友
+
+1. **直接发送 DMG 文件**：将生成的 DMG 文件发送给朋友
+2. **GitHub Releases**：上传 DMG 到 GitHub Releases 页面
+3. **安装说明**：
+   - 双击 DMG 文件
+   - 将 app 拖拽到 Applications 文件夹
+   - 右键点击 app → "打开"（绕过 Gatekeeper）
+
 ## 🏗 项目结构
 
 ```
 neobee-session-player/
+├── create_dmg.sh               # 构建和分发脚本
 ├── neobee-session-player/
 │   ├── App/                     # 应用入口
 │   ├── Features/
@@ -102,7 +142,8 @@ neobee-session-player/
 │   │   └── Persistence.swift            # CoreData 配置
 │   └── Views/                  # 主要视图
 ├── neobee-session-playerTests/ # 单元测试
-└── Podfile                     # CocoaPods 依赖
+├── Podfile                     # CocoaPods 依赖
+└── README.md                   # 项目文档
 ```
 
 ## 🧪 测试
@@ -132,6 +173,7 @@ xcodebuild test -workspace neobee-session-player.xcworkspace \
 - **播放控制**: 进度条拖拽和全局音量控制
 - **UI 优化**: 单行控制布局，优化视频显示区域
 - **测试覆盖**: 全面的单元测试确保代码质量
+- **自动化构建**: 一键构建脚本，自动处理依赖和分发
 
 ## 📄 许可证
 
