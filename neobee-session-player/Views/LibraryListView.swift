@@ -22,8 +22,6 @@ struct LibraryListView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(timeString(song.duration))
-                    .foregroundStyle(.secondary)
                 Button("播放") { play(song) }
                 Button("加入播放列表") { addToQueue(song) }
             }
@@ -52,12 +50,6 @@ struct LibraryListView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func timeString(_ seconds: Double) -> String {
-        guard seconds.isFinite && seconds > 0 else { return "--:--" }
-        let m = Int(seconds) / 60
-        let s = Int(seconds) % 60
-        return String(format: "%d:%02d", m, s)
-    }
 
     private func revealInFinder(_ song: Song) {
         guard let path = song.fileURL else { return }
@@ -75,7 +67,6 @@ struct LibraryListView: View {
         
         // Verify file exists before playing
         if !FileManager.default.fileExists(atPath: path) {
-            NSLog("[LibraryListView] File not found: \(path)")
             return
         }
         
@@ -89,7 +80,6 @@ struct LibraryListView: View {
         
         // Verify file exists before adding to queue
         if !FileManager.default.fileExists(atPath: path) {
-            NSLog("[LibraryListView] File not found: \(path)")
             return
         }
         
