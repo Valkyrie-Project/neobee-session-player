@@ -17,6 +17,16 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     @Published var videoSize: CGSize = .zero
     enum PreferredTrack { case original, accompaniment }
     @Published var preferredTrack: PreferredTrack = .original
+    // Playback progress (milliseconds)
+    @Published var currentTimeMs: Int64 = 0
+    @Published var durationMs: Int64 = 0
+    // Global volume (0.0 - 1.0), persisted
+    @Published var volume: Float = 1.0 {
+        didSet {
+            applyVolumeToPlayer()
+            persistVolume()
+        }
+    }
 
     private let mediaPlayer: VLCMediaPlayer
     // Single-player approach: no secondary player, no sync timer
@@ -35,6 +45,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         super.init()
         mediaPlayer.drawable = videoView
         mediaPlayer.delegate = self
+        // Load persisted global volume
+        loadPersistedVolume()
+        // Apply initial volume to the player
+        applyVolumeToPlayer()
     }
 
     deinit {
@@ -60,7 +74,17 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     func mediaPlayerTimeChanged(_ aNotification: Notification) {
-        // lazily update video size once it becomes known
+        // Update progress and lazily update video size once it becomes known
+        let time = mediaPlayer.time
+        let length = mediaPlayer.media?.length
+        let newCurrentMs = Int64(time.intValue)
+        let newDurationMs = Int64(length?.intValue ?? 0)
+        if newCurrentMs != currentTimeMs || newDurationMs != durationMs {
+            DispatchQueue.main.async { [weak self] in
+                self?.currentTimeMs = newCurrentMs
+                self?.durationMs = newDurationMs
+            }
+        }
         let size = mediaPlayer.videoSize
         if size.width > 0 && size.height > 0 && size != videoSize {
             DispatchQueue.main.async { [weak self] in
@@ -86,6 +110,9 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
 
     func play(url: URL) {
         currentURL = url
+        // Reset progress when starting new media
+        currentTimeMs = 0
+        durationMs = 0
         let media = VLCMedia(url: url)
         mediaPlayer.media = media
         mediaPlayer.play()
@@ -98,6 +125,8 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
                 self?.videoSize = size
             }
             self?.applyPreferredTrackIfPossible()
+            // Ensure global volume is applied after media is ready
+            self?.applyVolumeToPlayer()
         }
     }
 
@@ -112,6 +141,33 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     func stop() {
         mediaPlayer.stop()
         isPlaying = false
+        currentTimeMs = 0
+        durationMs = 0
+    }
+
+    // MARK: - Seeking
+    func seek(toMilliseconds targetMs: Int64) {
+        let clamped = max(0, min(targetMs, durationMs > 0 ? durationMs : targetMs))
+        mediaPlayer.time = VLCTime(int: Int32(clamped))
+    }
+    
+    func seek(toProgress progress: Float) {
+        // progress 0.0 - 1.0
+        let p = max(0, min(progress, 1))
+        
+        // Use time-based seeking for more reliable results
+        if durationMs > 0 {
+            let targetTime = Int64(Float(durationMs) * p)
+            mediaPlayer.time = VLCTime(int: Int32(targetTime))
+        } else {
+            // Fallback to position-based seeking
+            mediaPlayer.position = p
+        }
+    }
+    
+    // Get current position for UI updates
+    var currentPosition: Float {
+        return mediaPlayer.position
     }
 
     func refreshAudioTracks() {
@@ -186,6 +242,29 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         }
     }
 
+    // MARK: - Volume Persistence and Application
+    private let volumeDefaultsKey = "GlobalVolume_0_1"
+    
+    private func loadPersistedVolume() {
+        if UserDefaults.standard.object(forKey: volumeDefaultsKey) != nil {
+            let v = UserDefaults.standard.float(forKey: volumeDefaultsKey)
+            if v >= 0.0 && v <= 1.0 {
+                volume = v
+            }
+        }
+    }
+    
+    private func persistVolume() {
+        UserDefaults.standard.set(volume, forKey: volumeDefaultsKey)
+    }
+    
+    private func applyVolumeToPlayer() {
+        // VLCKit volume typical range is 0-100 for unity gain; >100 boosts and may clip.
+        // Map 0.0-1.0 to 0-100 to avoid distortion.
+        let scaled = Int32((max(0.0, min(volume, 1.0)) * 100.0).rounded())
+        mediaPlayer.audio?.volume = scaled
+    }
+
     private func logAudioTracks(context: String) {
         let ids = audioTrackIds.map { String($0) }.joined(separator: ", ")
         let names = audioTrackNames.joined(separator: ", ")
@@ -199,7 +278,6 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         }
         lastAudioLogSignature = signature
         lastAudioLogAt = now
-        print("[Audio][\(context)] \(signature)")
     }
 
     // Single-player approach: no sync timer needed
