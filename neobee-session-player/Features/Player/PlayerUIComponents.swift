@@ -23,7 +23,7 @@ struct VideoContainerView: View {
                 return (containerW, heightForWidth)
             } else {
                 // In windowed mode: fill width, reserve space for controls at bottom
-                let availableH = containerH - 120 // Reduced from 150
+                let availableH = containerH - 80 // Further reduced for single-row controls
                 let heightForWidth = containerW / aspect
                 if heightForWidth <= availableH {
                     // Video fits in available height, use full width
@@ -63,7 +63,7 @@ struct VideoContainerView: View {
                 .shadow(color: .black.opacity(isFullScreen ? 0 : 0.3), radius: 8, x: 0, y: 4)
                 .position(
                     x: containerW / 2,
-                    y: isFullScreen ? containerH / 2 : (containerH - 120) / 2
+                    y: isFullScreen ? containerH / 2 : (containerH - 80) / 2
                 )
         }
         .frame(width: containerW, height: containerH)
