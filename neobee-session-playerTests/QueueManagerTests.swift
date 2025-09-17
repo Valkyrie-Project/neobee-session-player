@@ -76,4 +76,76 @@ struct QueueManagerTests {
             }
         }
     }
+    
+    @Test func testQueueRemovalLogic() async throws {
+        // 测试队列删除逻辑
+        var testQueue = [
+            URL(fileURLWithPath: "/test/song1.mkv"),
+            URL(fileURLWithPath: "/test/song2.mpg"),
+            URL(fileURLWithPath: "/test/song3.mkv")
+        ]
+        var currentIndex = 1
+        
+        // 测试删除当前播放歌曲后面的歌曲
+        let removeIndex = 2
+        testQueue.remove(at: removeIndex)
+        
+        #expect(testQueue.count == 2)
+        #expect(testQueue[0].lastPathComponent == "song1.mkv")
+        #expect(testQueue[1].lastPathComponent == "song2.mpg")
+        
+        // 如果删除的歌曲在当前播放歌曲之前，当前索引需要调整
+        if removeIndex < currentIndex {
+            currentIndex -= 1
+            #expect(currentIndex == 0)
+        } else {
+            #expect(currentIndex == 1)
+        }
+    }
+    
+    @Test func testMoveToNextLogic() async throws {
+        // 测试"顶到下一首"逻辑
+        var testQueue = [
+            URL(fileURLWithPath: "/test/song1.mkv"),
+            URL(fileURLWithPath: "/test/song2.mpg"),
+            URL(fileURLWithPath: "/test/song3.mkv"),
+            URL(fileURLWithPath: "/test/song4.mkv")
+        ]
+        let currentIndex = 0
+        
+        // 测试将第3首歌（索引2）移到下一首位置（索引1）
+        let moveIndex = 2
+        let songToMove = testQueue[moveIndex]
+        testQueue.remove(at: moveIndex)
+        testQueue.insert(songToMove, at: currentIndex + 1)
+        
+        #expect(testQueue.count == 4)
+        #expect(testQueue[0].lastPathComponent == "song1.mkv") // 当前播放
+        #expect(testQueue[1].lastPathComponent == "song3.mkv") // 被移动的歌曲
+        #expect(testQueue[2].lastPathComponent == "song2.mpg") // 原来的下一首
+    }
+    
+    @Test func testQueueDisplayProperties() async throws {
+        // 测试队列显示相关属性
+        let testQueue = [
+            URL(fileURLWithPath: "/test/song1.mkv"),
+            URL(fileURLWithPath: "/test/song2.mpg"),
+            URL(fileURLWithPath: "/test/song3.mkv")
+        ]
+        let currentIndex = 0
+        
+        // 测试当前播放歌曲
+        let currentPlayingURL = testQueue[currentIndex]
+        #expect(currentPlayingURL.lastPathComponent == "song1.mkv")
+        
+        // 测试即将播放的歌曲
+        let upcomingSongs = Array(testQueue.dropFirst())
+        #expect(upcomingSongs.count == 2)
+        #expect(upcomingSongs[0].lastPathComponent == "song2.mpg")
+        #expect(upcomingSongs[1].lastPathComponent == "song3.mkv")
+        
+        // 测试队列是否有歌曲
+        let hasSongs = !testQueue.isEmpty
+        #expect(hasSongs)
+    }
 }
