@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import VLCKit
+import CoreData
 
 @main
 struct neobee_session_playerApp: App {
@@ -22,7 +23,70 @@ struct neobee_session_playerApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: .showPlayer)) { _ in
                     showPlayerWindow = true
                 }
-                .onAppear { }
+                .onAppear { 
+                    restoreSecurityScopedBookmarks()
+                    // Give a small delay to ensure bookmarks are restored before loading queue
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        restorePlaybackState()
+                    }
+                }
+        }
+    }
+    
+    private func restoreSecurityScopedBookmarks() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<LibraryFolder> = LibraryFolder.fetchRequest()
+        
+        do {
+            let folders = try context.fetch(request)
+            for folder in folders {
+                if let bookmarkData = folder.bookmark {
+                    do {
+                        var isStale = false
+                        let url = try URL(resolvingBookmarkData: bookmarkData,
+                                        options: [.withSecurityScope],
+                                        relativeTo: nil,
+                                        bookmarkDataIsStale: &isStale)
+                        
+                        if isStale {
+                            // Update the bookmark if it's stale
+                            if let newBookmark = try? url.bookmarkData(options: [.withSecurityScope],
+                                                                     includingResourceValuesForKeys: nil,
+                                                                     relativeTo: nil) {
+                                folder.bookmark = newBookmark
+                                try? context.save()
+                            }
+                        }
+                        
+                        // Start accessing the security-scoped resource
+                        _ = url.startAccessingSecurityScopedResource()
+                        NSLog("[App] Restored access to folder: \(url.path)")
+                        
+                    } catch {
+                        NSLog("[App] Failed to restore bookmark for folder \(folder.folderURL ?? "unknown"): \(error)")
+                    }
+                }
+            }
+        } catch {
+            NSLog("[App] Failed to fetch library folders: \(error)")
+        }
+    }
+    
+    private func restorePlaybackState() {
+        let queueManager = QueueManager.shared
+        
+        // Check if there's a persisted queue and current index
+        if !queueManager.queue.isEmpty, let currentIndex = queueManager.currentIndex {
+            let currentURL = queueManager.queue[currentIndex]
+            
+            // Verify the current file still exists
+            if FileManager.default.fileExists(atPath: currentURL.path) {
+                NSLog("[App] Restoring playback state - queue has \(queueManager.queue.count) items, current index: \(currentIndex)")
+                // Don't auto-play, just prepare the media so it's ready when user wants to play
+                // VLCPlayerController.shared.play(url: currentURL)
+            } else {
+                NSLog("[App] Current queue item no longer accessible: \(currentURL.path)")
+            }
         }
     }
 }

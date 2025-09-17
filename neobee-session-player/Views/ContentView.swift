@@ -85,6 +85,10 @@ struct ContentView: View {
             }
 
             try viewContext.save()
+            
+            // Also clear the playback queue
+            QueueManager.shared.clearQueue()
+            
         } catch {
             NSLog("[Library] Clear DB error: \(error.localizedDescription)")
         }

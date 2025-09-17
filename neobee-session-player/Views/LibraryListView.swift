@@ -72,6 +72,13 @@ struct LibraryListView: View {
     private func play(_ song: Song) {
         guard let path = song.fileURL else { return }
         let url = URL(fileURLWithPath: path)
+        
+        // Verify file exists before playing
+        if !FileManager.default.fileExists(atPath: path) {
+            NSLog("[LibraryListView] File not found: \(path)")
+            return
+        }
+        
         VLCPlayerController.shared.play(url: url)
         QueueManager.shared.replaceQueue(with: [url])
     }
@@ -79,6 +86,13 @@ struct LibraryListView: View {
     private func addToQueue(_ song: Song) {
         guard let path = song.fileURL else { return }
         let url = URL(fileURLWithPath: path)
+        
+        // Verify file exists before adding to queue
+        if !FileManager.default.fileExists(atPath: path) {
+            NSLog("[LibraryListView] File not found: \(path)")
+            return
+        }
+        
         QueueManager.shared.enqueue(url)
     }
 }
