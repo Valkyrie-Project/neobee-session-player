@@ -1,49 +1,6 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Song Info Card
-
-struct SongInfoCard: View {
-    let url: URL
-    @ObservedObject private var controller = VLCPlayerController.shared
-    let isHovering: Bool
-    let isFullScreen: Bool
-    
-    var body: some View {
-        VStack {
-            HStack {
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(url.deletingPathExtension().lastPathComponent)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.trailing)
-                    
-                    // 显示播放状态
-                    if controller.isPlaying {
-                        Label("正在播放", systemImage: "play.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    } else {
-                        Label("已暂停", systemImage: "pause.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-            }
-            .padding(.top, 20)
-            .padding(.trailing, 20)
-            
-            Spacer()
-        }
-        .opacity(isFullScreen ? 1.0 : 1.0)
-    }
-}
 
 // MARK: - Video Container
 
@@ -65,14 +22,16 @@ struct VideoContainerView: View {
                 let heightForWidth = containerW / aspect
                 return (containerW, heightForWidth)
             } else {
-                // In windowed mode: reserve space for controls
-                let availableH = containerH - 150
-                let widthFitH = containerW / aspect
-                if widthFitH <= availableH {
-                    return (containerW, widthFitH)
+                // In windowed mode: fill width, reserve space for controls at bottom
+                let availableH = containerH - 120 // Reduced from 150
+                let heightForWidth = containerW / aspect
+                if heightForWidth <= availableH {
+                    // Video fits in available height, use full width
+                    return (containerW, heightForWidth)
                 } else {
+                    // Video too tall, scale down but keep full width
                     let h = availableH
-                    let w = h * aspect
+                    let w = containerW // Always use full width
                     return (w, h)
                 }
             }
@@ -102,10 +61,13 @@ struct VideoContainerView: View {
                 .frame(width: finalW, height: finalH)
                 .cornerRadius(isFullScreen ? 0 : 12)
                 .shadow(color: .black.opacity(isFullScreen ? 0 : 0.3), radius: 8, x: 0, y: 4)
+                .position(
+                    x: containerW / 2,
+                    y: isFullScreen ? containerH / 2 : (containerH - 120) / 2
+                )
         }
         .frame(width: containerW, height: containerH)
         .clipped() // Ensure content doesn't overflow
-        .padding(.top, isFullScreen ? 0 : 20)
     }
 }
 
