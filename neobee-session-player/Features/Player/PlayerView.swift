@@ -3,13 +3,20 @@ import SwiftUI
 import AppKit
 import VLCKit
 
+extension Notification.Name {
+    static let showPlayer = Notification.Name("ShowPlayerWindow")
+}
+
 final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDelegate {
+    static let shared = VLCPlayerController()
     @Published var isPlaying: Bool = false
     @Published var currentURL: URL?
     @Published var audioTrackIds: [Int32] = []
     @Published var currentAudioTrackId: Int32? = nil
     @Published var audioTrackNames: [String] = []
     @Published var videoSize: CGSize = .zero
+    enum PreferredTrack { case original, accompaniment }
+    @Published var preferredTrack: PreferredTrack = .original
 
     private let mediaPlayer: VLCMediaPlayer
     // Single-player approach: no secondary player, no sync timer
@@ -45,6 +52,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
                 self.videoSize = size
             }
             self.refreshAudioTracks()
+            // Auto-advance when current ended
+            if self.mediaPlayer.state == .ended {
+                QueueManager.shared.playNextIfAvailable()
+            }
         }
     }
 
@@ -78,6 +89,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         let media = VLCMedia(url: url)
         mediaPlayer.media = media
         mediaPlayer.play()
+        NotificationCenter.default.post(name: .showPlayer, object: nil)
         // Refresh tracks shortly after playback starts
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.refreshAudioTracks()
@@ -85,6 +97,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             if let size = self?.mediaPlayer.videoSize, size.width > 0 && size.height > 0 {
                 self?.videoSize = size
             }
+            self?.applyPreferredTrackIfPossible()
         }
     }
 
@@ -136,10 +149,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         let current: Int32 = mediaPlayer.currentAudioTrackIndex
         currentAudioTrackId = current >= 0 ? current : nil
 
-        // Ensure main player uses a valid track if available
-        if let a = originalTrackId, currentAudioTrackId == nil {
-            mediaPlayer.currentAudioTrackIndex = a
-        }
+        // Do not force default here; defer to preferred track application
 
         logAudioTracks(context: "refresh")
     }
@@ -152,6 +162,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             mediaPlayer.currentAudioTrackIndex = id
             mediaPlayer.audio?.isMuted = false
             currentAudioTrackId = id
+            preferredTrack = .original
             logAudioTracks(context: "select-original")
         }
     }
@@ -161,7 +172,17 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             mediaPlayer.currentAudioTrackIndex = id
             mediaPlayer.audio?.isMuted = false
             currentAudioTrackId = id
+            preferredTrack = .accompaniment
             logAudioTracks(context: "select-accompaniment")
+        }
+    }
+
+    private func applyPreferredTrackIfPossible() {
+        switch preferredTrack {
+        case .original:
+            if let id = originalTrackId { mediaPlayer.currentAudioTrackIndex = id; currentAudioTrackId = id; logAudioTracks(context: "apply-pref-original") }
+        case .accompaniment:
+            if let id = accompanimentTrackId { mediaPlayer.currentAudioTrackIndex = id; currentAudioTrackId = id; logAudioTracks(context: "apply-pref-accompaniment") }
         }
     }
 
@@ -198,7 +219,9 @@ struct VLCVideoContainerView: NSViewRepresentable {
 }
 
 struct PlayerView: View {
-    @StateObject private var controller = VLCPlayerController()
+    @ObservedObject private var controller = VLCPlayerController.shared
+    @ObservedObject private var queue = QueueManager.shared
+    let isEmbedded: Bool
 
     var body: some View {
         VStack(spacing: 12) {
@@ -235,13 +258,10 @@ struct PlayerView: View {
                         .clipped()
                 }
             }
-            .frame(minWidth: intrinsic.width, minHeight: intrinsic.height)
+            .frame(minWidth: isEmbedded ? 0 : intrinsic.width,
+                   minHeight: isEmbedded ? 0 : intrinsic.height)
 
             HStack(spacing: 12) {
-                Button("Open…") {
-                    controller.openAndPlayFromPanel()
-                }
-
                 Button(controller.isPlaying ? "Pause" : "Play") {
                     controller.isPlaying ? controller.pause() : controller.play()
                 }
@@ -251,6 +271,11 @@ struct PlayerView: View {
                     controller.stop()
                 }
                 .disabled(controller.currentURL == nil)
+
+                Button("下一首") {
+                    queue.playNextIfAvailable()
+                }
+                .disabled(!queue.canPlayNext)
 
                 Button("Full Screen") {
                     if let window = NSApp.keyWindow {
@@ -288,7 +313,7 @@ struct PlayerView: View {
 }
 
 #Preview {
-    PlayerView()
+    PlayerView(isEmbedded: false)
 }
 
 
