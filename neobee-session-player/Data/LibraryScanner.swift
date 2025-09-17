@@ -2,10 +2,11 @@ import Foundation
 import CoreData
 import AVFoundation
 import AppKit
+import VLCKit
 
 // MARK: - Library Scanner Service
 
-final class LibraryScanner: ObservableObject {
+final class LibraryScanner: ObservableObject, @unchecked Sendable {
     @Published var isScanning: Bool = false
     
     private let viewContext: NSManagedObjectContext
@@ -51,7 +52,6 @@ final class LibraryScanner: ObservableObject {
             QueueManager.shared.clearQueue()
             
         } catch {
-            NSLog("[Library] Clear DB error: \(error.localizedDescription)")
         }
     }
     
@@ -65,7 +65,7 @@ final class LibraryScanner: ObservableObject {
             folder.bookmark = bookmark
         }
         folder.createdAt = Date()
-        do { try viewContext.save() } catch { NSLog("[Library] save folder: \(error.localizedDescription)") }
+        do { try viewContext.save() } catch { }
         Task.detached(priority: .userInitiated) {
             await self.scanFolderAsync(url: url)
             await MainActor.run { self.isScanning = false }
@@ -74,15 +74,15 @@ final class LibraryScanner: ObservableObject {
 
     private func scanFolderAsync(url: URL) async {
         let fm = FileManager.default
-        // 支持的视频： mkv、mpg
-        let exts = ["mkv","mpg"]
+        // 支持的视频：常见KTV容器
+        let exts = ["mkv","mpg","mp4","avi","mov","mpeg"]
         let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
-        var newSongs: [(URL, String,String?,String?,Double?)] = []
+        var newSongs: [(URL, String,String?,String?)] = []
         while let file = enumerator?.nextObject() as? URL {
             if (try? file.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true { continue }
             if !exts.contains(file.pathExtension.lowercased()) { continue }
             let meta = await extractMetadataAsync(url: file)
-            newSongs.append((file.standardizedFileURL.resolvingSymlinksInPath(), meta.title, meta.artist, meta.album, meta.duration))
+            newSongs.append((file.standardizedFileURL.resolvingSymlinksInPath(), meta.title, meta.artist, meta.album))
         }
 
         viewContext.performAndWait {
@@ -90,30 +90,31 @@ final class LibraryScanner: ObservableObject {
                 let fr: NSFetchRequest<Song> = Song.fetchRequest()
                 let normalizedPath = entry.0.path
                 fr.predicate = NSPredicate(format: "fileURL == %@", normalizedPath)
-                if let count = try? viewContext.count(for: fr), count > 0 { continue }
-                let s = Song(context: viewContext)
-                s.id = UUID()
-                s.fileURL = normalizedPath
-                s.title = entry.1
-                s.artist = entry.2
-                s.album = entry.3
-                s.duration = entry.4 ?? 0
-                s.addedAt = Date()
+                if let existing = (try? viewContext.fetch(fr))?.first {
+                    // 如果标题为空则更新标题
+                    if (existing.title ?? "").isEmpty { existing.title = entry.1 }
+                    if existing.artist == nil { existing.artist = entry.2 }
+                    if existing.album == nil { existing.album = entry.3 }
+                } else {
+                    let s = Song(context: viewContext)
+                    s.id = UUID()
+                    s.fileURL = normalizedPath
+                    s.title = entry.1
+                    s.artist = entry.2
+                    s.album = entry.3
+                    s.duration = 0  // 不需要时长，设为0
+                    s.addedAt = Date()
+                }
             }
-            do { try viewContext.save() } catch { NSLog("[Library] save songs: \(error.localizedDescription)") }
+            do { try viewContext.save() } catch { }
         }
     }
 
-    private func extractMetadataAsync(url: URL) async -> (title: String, artist: String?, album: String?, duration: Double?) {
+    private func extractMetadataAsync(url: URL) async -> (title: String, artist: String?, album: String?) {
         let asset = AVURLAsset(url: url)
-        var durationSeconds: Double? = nil
         var title: String? = nil
         var artist: String? = nil
         var album: String? = nil
-
-        if let duration = try? await asset.load(.duration) {
-            durationSeconds = CMTimeGetSeconds(duration)
-        }
 
         if let common = try? await asset.load(.commonMetadata) {
             if let titleItem = AVMetadataItem.metadataItems(from: common, withKey: AVMetadataKey.commonKeyTitle, keySpace: .common).first,
@@ -125,6 +126,6 @@ final class LibraryScanner: ObservableObject {
         }
 
         let fallback = url.deletingPathExtension().lastPathComponent
-        return (title ?? fallback, artist, album, durationSeconds)
+        return (title ?? fallback, artist, album)
     }
 }
