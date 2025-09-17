@@ -60,15 +60,12 @@ struct neobee_session_playerApp: App {
                         
                         // Start accessing the security-scoped resource
                         _ = url.startAccessingSecurityScopedResource()
-                        NSLog("[App] Restored access to folder: \(url.path)")
                         
                     } catch {
-                        NSLog("[App] Failed to restore bookmark for folder \(folder.folderURL ?? "unknown"): \(error)")
                     }
                 }
             }
         } catch {
-            NSLog("[App] Failed to fetch library folders: \(error)")
         }
     }
     
@@ -81,11 +78,9 @@ struct neobee_session_playerApp: App {
             
             // Verify the current file still exists
             if FileManager.default.fileExists(atPath: currentURL.path) {
-                NSLog("[App] Restoring playback state - queue has \(queueManager.queue.count) items, current index: \(currentIndex)")
                 // Don't auto-play, just prepare the media so it's ready when user wants to play
                 // VLCPlayerController.shared.play(url: currentURL)
             } else {
-                NSLog("[App] Current queue item no longer accessible: \(currentURL.path)")
             }
         }
     }

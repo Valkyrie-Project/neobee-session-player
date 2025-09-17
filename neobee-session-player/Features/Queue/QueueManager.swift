@@ -86,7 +86,6 @@ final class QueueManager: ObservableObject {
             }
         }
         
-        NSLog("[QueueManager] Loaded persisted queue with \(queue.count) items, current index: \(currentIndex?.description ?? "nil")")
     }
     
     func clearQueue() {

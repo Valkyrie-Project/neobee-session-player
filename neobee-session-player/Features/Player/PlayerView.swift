@@ -76,7 +76,6 @@ struct PlayerView: View {
     
     private func showControlsWithAutoHide() {
         if !showControls {
-            NSLog("[Controls] Showing controls with auto-hide")
         }
         showControls = true
         controlsOpacity = 1.0
@@ -89,7 +88,6 @@ struct PlayerView: View {
         hideControlsTimer?.invalidate()
         hideControlsTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
             if isFullScreen {
-                NSLog("[Controls] Timer expired, hiding controls")
                 // Simple hide without animation for better performance
                 showControls = false
             }
