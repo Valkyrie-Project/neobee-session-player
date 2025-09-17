@@ -5,6 +5,35 @@ APP_NAME="NeoBee KTV播放器"
 DMG_NAME="NeoBee-KTV-Player"
 VOLUME_NAME="NeoBee KTV Player"
 
+# 检查并安装依赖
+echo "Checking dependencies..."
+
+# 检查CocoaPods是否安装
+if ! command -v pod &> /dev/null; then
+    echo "❌ CocoaPods not found. Please install CocoaPods first:"
+    echo "   sudo gem install cocoapods"
+    exit 1
+fi
+
+# 检查Podfile是否存在
+if [ ! -f "Podfile" ]; then
+    echo "❌ Podfile not found. Please run this script from the project root directory."
+    exit 1
+fi
+
+# 检查Pods目录是否存在，如果不存在则运行pod install
+if [ ! -d "Pods" ]; then
+    echo "📦 Pods directory not found. Running pod install..."
+    pod install
+    if [ $? -ne 0 ]; then
+        echo "❌ pod install failed. Please check your Podfile and try again."
+        exit 1
+    fi
+    echo "✅ Dependencies installed successfully"
+else
+    echo "✅ Dependencies already installed"
+fi
+
 # 构建Release版本
 echo "Building Release version..."
 xcodebuild -workspace neobee-session-player.xcworkspace \
