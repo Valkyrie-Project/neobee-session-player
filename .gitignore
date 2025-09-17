@@ -21,3 +21,6 @@ Pods/
 
 # Logs
 *.log
+
+# Build artifacts
+*.dmg
