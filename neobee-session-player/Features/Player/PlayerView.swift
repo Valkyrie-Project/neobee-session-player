@@ -216,13 +216,14 @@ struct PlayerView: View {
                     let videoW = max(controller.videoSize.width, 16)
                     let videoH = max(controller.videoSize.height, 9)
                     let aspect = videoW / videoH
-                    // Prefer fit-to-width, but cap by available height to avoid overlapping controls
+                    // Prefer fit-to-width. In full screen, ALWAYS fit-to-width (letterbox vertically).
+                    // In windowed mode, if width-fit would exceed available height, fall back to fit-to-height.
+                    let isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
                     let widthFitH = containerW / aspect
                     let (finalW, finalH): (CGFloat, CGFloat) = {
-                        if widthFitH <= containerH {
+                        if isFullScreen || widthFitH <= containerH {
                             return (containerW, widthFitH)
                         } else {
-                            // Fit-to-height fallback (side bars) when width-fit would exceed available height
                             let h = containerH
                             let w = h * aspect
                             return (w, h)
@@ -250,6 +251,12 @@ struct PlayerView: View {
                     controller.stop()
                 }
                 .disabled(controller.currentURL == nil)
+
+                Button("Full Screen") {
+                    if let window = NSApp.keyWindow {
+                        window.toggleFullScreen(nil)
+                    }
+                }
 
                 Spacer()
 
