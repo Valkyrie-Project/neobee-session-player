@@ -27,7 +27,6 @@ struct neobee_session_playerApp: App {
                     restoreSecurityScopedBookmarks()
                     // Give a small delay to ensure bookmarks are restored before loading queue
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        restorePlaybackState()
                     }
                 }
         }
@@ -69,21 +68,6 @@ struct neobee_session_playerApp: App {
         }
     }
     
-    private func restorePlaybackState() {
-        let queueManager = QueueManager.shared
-        
-        // Check if there's a persisted queue and current index
-        if !queueManager.queue.isEmpty, let currentIndex = queueManager.currentIndex {
-            let currentURL = queueManager.queue[currentIndex]
-            
-            // Verify the current file still exists
-            if FileManager.default.fileExists(atPath: currentURL.path) {
-                // Don't auto-play, just prepare the media so it's ready when user wants to play
-                // VLCPlayerController.shared.play(url: currentURL)
-            } else {
-            }
-        }
-    }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
