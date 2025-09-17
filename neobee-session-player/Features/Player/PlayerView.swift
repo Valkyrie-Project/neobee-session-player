@@ -226,6 +226,8 @@ struct PlayerView: View {
     @State private var showControls = true
     @State private var controlsOpacity: Double = 1.0
     @State private var isHovering = false
+    @State private var isFullScreen = false
+    @State private var hideControlsTimer: Timer?
 
     var body: some View {
         GeometryReader { geometry in
@@ -233,16 +235,23 @@ struct PlayerView: View {
                 // Main video container with rounded corners and shadow
                 videoContainerView(geometry: geometry)
                 
+                // Mouse detection overlay (behind controls)
+                if isFullScreen {
+                    fullScreenMouseDetection(geometry: geometry)
+                }
+                
                 // iOS 26 Liquid Glass control overlay
                 if showControls {
                     controlOverlay
                         .opacity(controlsOpacity)
-                        .animation(.easeInOut(duration: 0.3), value: controlsOpacity)
+                        .zIndex(10) // Above mouse detection layer
                 }
                 
-                // Floating song info card
+                // Floating song info card (more prominent in full screen)
                 if let url = controller.currentURL {
                     songInfoCard(url: url)
+                        .opacity(isFullScreen ? (showControls ? 1.0 : 0.8) : 1.0)
+                        .zIndex(50)
                 }
             }
         }
@@ -260,9 +269,49 @@ struct PlayerView: View {
         )
         .cornerRadius(isEmbedded ? 12 : 0)
         .onHover { hovering in
-            withAnimation(.liquidMotion(duration: 0.4)) {
-                isHovering = hovering
+            isHovering = hovering
+            if !isFullScreen {
+                // Simple opacity change without animation for better performance
                 controlsOpacity = hovering ? 1.0 : 0.7
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in
+            isFullScreen = true
+            // Show controls initially, then auto-hide after 3 seconds
+            showControlsWithAutoHide()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { _ in
+            isFullScreen = false
+            hideControlsTimer?.invalidate()
+            showControls = true
+            controlsOpacity = 1.0
+        }
+        .onAppear {
+            isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
+            if isFullScreen {
+                showControlsWithAutoHide()
+            }
+        }
+    }
+    
+    private func showControlsWithAutoHide() {
+        if !showControls {
+            NSLog("[Controls] Showing controls with auto-hide")
+        }
+        showControls = true
+        controlsOpacity = 1.0
+        
+        // Always restart the timer when showing controls
+        startHideTimer()
+    }
+    
+    private func startHideTimer() {
+        hideControlsTimer?.invalidate()
+        hideControlsTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            if isFullScreen {
+                NSLog("[Controls] Timer expired, hiding controls")
+                // Simple hide without animation for better performance
+                showControls = false
             }
         }
     }
@@ -270,29 +319,36 @@ struct PlayerView: View {
     // MARK: - Video Container
     private func videoContainerView(geometry: GeometryProxy) -> some View {
         let containerW = max(geometry.size.width, 1)
-        let containerH = max(geometry.size.height - 120, 1) // Reserve space for controls
+        let containerH = max(geometry.size.height, 1) // Use full container height
         let videoW = max(controller.videoSize.width, 16)
         let videoH = max(controller.videoSize.height, 9)
         let aspect = videoW / videoH
         
-        let isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
-        let widthFitH = containerW / aspect
         let (finalW, finalH): (CGFloat, CGFloat) = {
-            if isFullScreen || widthFitH <= containerH {
-                return (containerW, widthFitH)
+            if isFullScreen {
+                // In fullscreen: always fill width, allow top/bottom black bars
+                let heightForWidth = containerW / aspect
+                return (containerW, heightForWidth)
             } else {
-                let h = containerH
-                let w = h * aspect
-                return (w, h)
+                // In windowed mode: reserve space for controls
+                let availableH = containerH - 120
+                let widthFitH = containerW / aspect
+                if widthFitH <= availableH {
+                    return (containerW, widthFitH)
+                } else {
+                    let h = availableH
+                    let w = h * aspect
+                    return (w, h)
+                }
             }
         }()
         
         return ZStack {
             // Background with subtle pattern
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: isFullScreen ? 0 : 16)
                 .fill(Color.black)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: isFullScreen ? 0 : 16)
                         .stroke(
                             LinearGradient(
                                 colors: [
@@ -309,11 +365,12 @@ struct PlayerView: View {
             
             VLCVideoContainerView(controller: controller)
                 .frame(width: finalW, height: finalH)
-                .cornerRadius(12)
-                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                .cornerRadius(isFullScreen ? 0 : 12)
+                .shadow(color: .black.opacity(isFullScreen ? 0 : 0.3), radius: 8, x: 0, y: 4)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 20)
+        .frame(width: containerW, height: containerH)
+        .clipped() // Ensure content doesn't overflow
+        .padding(.top, isFullScreen ? 0 : 20)
     }
     
     // MARK: - iOS 26 Liquid Glass Control Overlay
@@ -342,8 +399,9 @@ struct PlayerView: View {
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, isFullScreen ? 40 : 20) // More space in fullscreen
         }
+        .allowsHitTesting(true) // Always allow hit testing for controls
     }
     
     // MARK: - Liquid Glass Background
@@ -389,6 +447,7 @@ struct PlayerView: View {
     // MARK: - Modern Play/Pause Button
     private var playPauseButton: some View {
         Button(action: {
+            NSLog("[Controls] Play/Pause button clicked!")
             withAnimation(.liquidMotion(duration: 0.3)) {
                 controller.isPlaying ? controller.pause() : controller.play()
             }
@@ -541,6 +600,51 @@ struct PlayerView: View {
             
             Spacer()
         }
+    }
+    
+    // MARK: - Full Screen Mouse Detection
+    private func fullScreenMouseDetection(geometry: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            // Top area - click to show controls as backup
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle()) // Ensure hover detection works
+                .onHover { hovering in
+                    // Mouse in top area, start hide timer if leaving
+                    if !hovering && showControls {
+                        startHideTimer()
+                    }
+                }
+                .onTapGesture {
+                    // Backup: click anywhere to toggle controls
+                    NSLog("[Controls] Top area clicked")
+                    if showControls {
+                        showControls = false
+                        hideControlsTimer?.invalidate()
+                    } else {
+                        showControlsWithAutoHide()
+                    }
+                }
+            
+            // Bottom control area - 150px high
+            Rectangle()
+                .fill(Color.clear)
+                .frame(height: 150)
+                .contentShape(Rectangle()) // Ensure hover detection works
+                .allowsHitTesting(false) // Don't interfere with control clicks
+                .onHover { hovering in
+                    if hovering {
+                        // Mouse entered control area
+                        NSLog("[Controls] Mouse entered control area")
+                        showControlsWithAutoHide()
+                    } else {
+                        // Mouse left control area
+                        NSLog("[Controls] Mouse left control area")
+                        startHideTimer()
+                    }
+                }
+        }
+        .zIndex(1) // Above video but below controls
     }
 }
 

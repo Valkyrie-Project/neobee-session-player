@@ -20,36 +20,69 @@ struct ContentView: View {
 
     @State private var query: String = ""
     @State private var isScanning: Bool = false
+    @State private var isFullScreen: Bool = false
 
     var body: some View {
         HStack(spacing: 0) {
             // Left: Always-visible player
-            PlayerView(isEmbedded: true)
-                .frame(minWidth: 600)
+            PlayerView(isEmbedded: !isFullScreen)
+                .frame(minWidth: isFullScreen ? nil : 600)
                 .background(Color.black)
                 .layoutPriority(1)
 
-            Divider()
-
-            // Right: Library controls + list
-            VStack(spacing: 0) {
-                HStack {
-                    Button("添加歌单") { addFolder() }
-                    Button("清理歌单", role: .destructive) { clearDatabase() }
-                    Spacer()
-                    TextField("搜索标题/艺人", text: $query)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(maxWidth: 320)
-                }
-                .padding(8)
-                .background(.bar)
-
-                LibraryListView(query: query)
-                    .overlay(alignment: .topTrailing) {
-                        if isScanning { ProgressView().padding() }
+            // Right: Library controls + list (hidden in full screen)
+            if !isFullScreen {
+                Divider()
+                
+                VStack(spacing: 0) {
+                    HStack {
+                        Button("添加歌单") { addFolder() }
+                        Button("清理歌单", role: .destructive) { clearDatabase() }
+                        Spacer()
+                        TextField("搜索标题/艺人", text: $query)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(maxWidth: 320)
                     }
+                    .padding(8)
+                    .background(.bar)
+
+                    LibraryListView(query: query)
+                        .overlay(alignment: .topTrailing) {
+                            if isScanning { ProgressView().padding() }
+                        }
+                }
+                .frame(minWidth: 360)
             }
-            .frame(minWidth: 360)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in
+            // No animation for better performance
+            isFullScreen = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { _ in
+            // No animation for better performance
+            isFullScreen = false
+        }
+        .onAppear {
+            // Check initial full screen state
+            isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
+        }
+        .focusable()
+        .onKeyPress { keyPress in
+            // F key for full screen toggle
+            if keyPress.characters == "f" {
+                if let window = NSApp.keyWindow {
+                    window.toggleFullScreen(nil)
+                }
+                return .handled
+            }
+            // ESC key to exit full screen
+            else if keyPress.key == .escape && isFullScreen {
+                if let window = NSApp.keyWindow {
+                    window.toggleFullScreen(nil)
+                }
+                return .handled
+            }
+            return .ignored
         }
     }
 
