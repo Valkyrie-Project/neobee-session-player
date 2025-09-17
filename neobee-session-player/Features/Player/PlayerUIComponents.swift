@@ -66,7 +66,7 @@ struct VideoContainerView: View {
                 return (containerW, heightForWidth)
             } else {
                 // In windowed mode: reserve space for controls
-                let availableH = containerH - 120
+                let availableH = containerH - 150
                 let widthFitH = containerW / aspect
                 if widthFitH <= availableH {
                     return (containerW, widthFitH)
@@ -147,7 +147,6 @@ struct FullScreenMouseDetection: View {
                 }
                 .onTapGesture {
                     // Backup: click anywhere to toggle controls
-                    NSLog("[Controls] Top area clicked")
                     if localShowControls {
                         localShowControls = false
                         hideControlsTimer?.invalidate()
@@ -166,12 +165,10 @@ struct FullScreenMouseDetection: View {
                 .onHover { hovering in
                     if hovering {
                         // Mouse entered control area
-                        NSLog("[Controls] Mouse entered control area")
                         showControlsWithAutoHide()
                         localShowControls = true
                     } else {
                         // Mouse left control area
-                        NSLog("[Controls] Mouse left control area")
                         startHideTimer()
                     }
                 }
