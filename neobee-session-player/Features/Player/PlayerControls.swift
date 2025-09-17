@@ -105,7 +105,11 @@ struct ControlOverlay: View {
             Spacer()
             
             // Main control panel
-            HStack(spacing: 20) {
+            VStack(spacing: 12) {
+                // Progress bar with current time and duration, seekable
+                ProgressSeekBar()
+                
+                HStack(spacing: 20) {
                 // Play/Pause button
                 PlayPauseButton()
                 
@@ -118,11 +122,107 @@ struct ControlOverlay: View {
                 
                 // Secondary controls
                 SecondaryControls()
+                    
+                    // Volume slider
+                    VolumeControl()
+                }
             }
             .padding()
             .background(ControlBackground())
             .padding(.horizontal)
             .padding(.bottom, isFullScreen ? 40 : 32)
         }
+    }
+}
+
+// MARK: - Progress Seek Bar
+
+struct ProgressSeekBar: View {
+    @ObservedObject private var controller = VLCPlayerController.shared
+    @State private var isScrubbing: Bool = false
+    @State private var localProgress: Double = 0.0 // 0..1 while scrubbing
+    
+    private func formatTime(_ ms: Int64) -> String {
+        let totalSeconds = Int(ms / 1000)
+        let s = totalSeconds % 60
+        let m = (totalSeconds / 60) % 60
+        let h = totalSeconds / 3600
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%02d:%02d", m, s)
+        }
+    }
+    
+    var body: some View {
+        let progress: Double = {
+            if isScrubbing { return localProgress }
+            return Double(controller.currentPosition)
+        }()
+        HStack(spacing: 10) {
+            Text(formatTime(controller.currentTimeMs))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 48, alignment: .leading)
+            Slider(value: Binding<Double>(
+                get: { progress },
+                set: { newValue in
+                    isScrubbing = true
+                    localProgress = newValue
+                }
+            ), in: 0...1)
+            .onChange(of: localProgress) { _, newValue in
+                // Throttle seek calls during dragging
+                controller.seek(toProgress: Float(newValue))
+            }
+            .onChange(of: isScrubbing) { _, scrubbing in
+                if !scrubbing {
+                    // Final seek when scrubbing finishes
+                    controller.seek(toProgress: Float(localProgress))
+                }
+            }
+            Text(formatTime(controller.durationMs))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 48, alignment: .trailing)
+        }
+        .disabled(controller.currentURL == nil)
+        .onChange(of: controller.currentURL) { _, _ in
+            // Reset progress when switching songs
+            localProgress = 0.0
+            isScrubbing = false
+        }
+    }
+}
+
+// MARK: - Volume Control
+
+struct VolumeControl: View {
+    @ObservedObject private var controller = VLCPlayerController.shared
+    
+    // Simple linear volume control - no logarithmic scaling for now
+    private func linearToLog(_ linear: Float) -> Float {
+        return linear
+    }
+    
+    private func logToLinear(_ log: Float) -> Float {
+        return log
+    }
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: controller.volume <= 0.001 ? "speaker.slash.fill" : (controller.volume < 0.5 ? "speaker.fill" : "speaker.wave.2.fill"))
+                .font(.system(size: 14))
+                .foregroundStyle(.primary)
+            Slider(value: Binding<Double>(
+                get: { Double(linearToLog(controller.volume)) },
+                set: { newVal in 
+                    let logVal = Float(newVal)
+                    controller.volume = logToLinear(logVal)
+                }
+            ), in: 0...1)
+            .frame(width: 160)
+        }
+        .frame(maxHeight: 24)
     }
 }
