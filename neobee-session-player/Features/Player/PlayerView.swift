@@ -38,12 +38,6 @@ struct PlayerView: View {
                         .zIndex(10) // Above mouse detection layer
                 }
                 
-                // Floating song info card (show when there's a loaded song)
-                if let url = controller.currentURL {
-                    SongInfoCard(url: url, isHovering: isHovering, isFullScreen: isFullScreen)
-                        .opacity(isFullScreen ? (showControls ? 1.0 : 0.8) : 1.0)
-                        .zIndex(50)
-                }
             }
         }
         .background(PlayerBackgroundGradient())

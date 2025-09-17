@@ -12,26 +12,34 @@ struct LibraryListView: View {
     let query: String
 
     var body: some View {
-        List(filteredSongs) { song in
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(song.title ?? "Untitled")
-                        .font(.headline)
-                    Text(metaLine(for: song))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            // Songs list
+            List(filteredSongs) { song in
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(song.title ?? "Untitled")
+                            .font(.headline)
+                        Text(metaLine(for: song))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("播放") { play(song) }
+                    Button("加入播放列表") { addToQueue(song) }
                 }
-                Spacer()
-                Button("播放") { play(song) }
-                Button("加入播放列表") { addToQueue(song) }
+                .contextMenu {
+                    Button("播放") { play(song) }
+                    Button("加入播放列表") { addToQueue(song) }
+                    Divider()
+                    Button("在 Finder 中显示") { revealInFinder(song) }
+                    Button("删除这首", role: .destructive) { deleteSong(song) }
+                }
             }
-            .contextMenu {
-                Button("播放") { play(song) }
-                Button("加入播放列表") { addToQueue(song) }
-                Divider()
-                Button("在 Finder 中显示") { revealInFinder(song) }
-                Button("删除这首", role: .destructive) { deleteSong(song) }
-            }
+            
+            // Queue display area
+            Divider()
+            QueueDisplayView()
+                .padding()
         }
     }
 
