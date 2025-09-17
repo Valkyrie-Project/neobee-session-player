@@ -47,22 +47,16 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6A1539052E71A500005BDA9D /* neobee-session-player */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "neobee-session-player";
 			sourceTree = "<group>";
 		};
 		6A1539192E71A501005BDA9D /* neobee-session-playerTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "neobee-session-playerTests";
 			sourceTree = "<group>";
 		};
 		6A1539232E71A501005BDA9D /* neobee-session-playerUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "neobee-session-playerUITests";
 			sourceTree = "<group>";
 		};
@@ -287,9 +281,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
