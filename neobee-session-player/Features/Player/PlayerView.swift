@@ -222,93 +222,332 @@ struct PlayerView: View {
     @ObservedObject private var controller = VLCPlayerController.shared
     @ObservedObject private var queue = QueueManager.shared
     let isEmbedded: Bool
+    
+    @State private var showControls = true
+    @State private var controlsOpacity: Double = 1.0
+    @State private var isHovering = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Compute dynamic minimum size from the video's intrinsic size
-            let intrinsic = controller.videoSize.width > 0 && controller.videoSize.height > 0
-                ? controller.videoSize
-                : CGSize(width: 800, height: 450)
-
-            GeometryReader { geo in
-                ZStack {
-                    Color.black
-                    // Maintain left/right fit, letterbox top/bottom
-                    let containerW = max(geo.size.width, 1)
-                    let containerH = max(geo.size.height, 1)
-                    let videoW = max(controller.videoSize.width, 16)
-                    let videoH = max(controller.videoSize.height, 9)
-                    let aspect = videoW / videoH
-                    // Prefer fit-to-width. In full screen, ALWAYS fit-to-width (letterbox vertically).
-                    // In windowed mode, if width-fit would exceed available height, fall back to fit-to-height.
-                    let isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
-                    let widthFitH = containerW / aspect
-                    let (finalW, finalH): (CGFloat, CGFloat) = {
-                        if isFullScreen || widthFitH <= containerH {
-                            return (containerW, widthFitH)
-                        } else {
-                            let h = containerH
-                            let w = h * aspect
-                            return (w, h)
-                        }
-                    }()
-                    VLCVideoContainerView(controller: controller)
-                        .frame(width: finalW, height: finalH)
-                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
-                        .clipped()
+        GeometryReader { geometry in
+            ZStack {
+                // Main video container with rounded corners and shadow
+                videoContainerView(geometry: geometry)
+                
+                // iOS 26 Liquid Glass control overlay
+                if showControls {
+                    controlOverlay
+                        .opacity(controlsOpacity)
+                        .animation(.easeInOut(duration: 0.3), value: controlsOpacity)
+                }
+                
+                // Floating song info card
+                if let url = controller.currentURL {
+                    songInfoCard(url: url)
                 }
             }
-            .frame(minWidth: isEmbedded ? 0 : intrinsic.width,
-                   minHeight: isEmbedded ? 0 : intrinsic.height)
-
-            HStack(spacing: 12) {
-                Button(controller.isPlaying ? "Pause" : "Play") {
-                    controller.isPlaying ? controller.pause() : controller.play()
-                }
-                .disabled(controller.currentURL == nil)
-
-                Button("Stop") {
-                    controller.stop()
-                }
-                .disabled(controller.currentURL == nil)
-
-                Button("下一首") {
+        }
+        .background(
+            // iOS 26 Dynamic background with subtle gradient
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.95),
+                    Color.black.opacity(0.8),
+                    Color.black.opacity(0.95)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(isEmbedded ? 12 : 0)
+        .onHover { hovering in
+            withAnimation(.liquidMotion(duration: 0.4)) {
+                isHovering = hovering
+                controlsOpacity = hovering ? 1.0 : 0.7
+            }
+        }
+    }
+    
+    // MARK: - Video Container
+    private func videoContainerView(geometry: GeometryProxy) -> some View {
+        let containerW = max(geometry.size.width, 1)
+        let containerH = max(geometry.size.height - 120, 1) // Reserve space for controls
+        let videoW = max(controller.videoSize.width, 16)
+        let videoH = max(controller.videoSize.height, 9)
+        let aspect = videoW / videoH
+        
+        let isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
+        let widthFitH = containerW / aspect
+        let (finalW, finalH): (CGFloat, CGFloat) = {
+            if isFullScreen || widthFitH <= containerH {
+                return (containerW, widthFitH)
+            } else {
+                let h = containerH
+                let w = h * aspect
+                return (w, h)
+            }
+        }()
+        
+        return ZStack {
+            // Background with subtle pattern
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.1),
+                                    Color.clear,
+                                    Color.white.opacity(0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+            
+            VLCVideoContainerView(controller: controller)
+                .frame(width: finalW, height: finalH)
+                .cornerRadius(12)
+                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, 20)
+    }
+    
+    // MARK: - iOS 26 Liquid Glass Control Overlay
+    private var controlOverlay: some View {
+        VStack {
+            Spacer()
+            
+            // Main control panel with Liquid Glass effect
+            HStack(spacing: 20) {
+                // Play/Pause with modern design
+                playPauseButton
+                
+                Spacer()
+                
+                // Audio track selector with segmented style
+                audioTrackSelector
+                
+                Spacer()
+                
+                // Secondary controls
+                secondaryControls
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            .background(liquidGlassBackground)
+            .cornerRadius(20)
+            .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+    }
+    
+    // MARK: - Liquid Glass Background
+    private var liquidGlassBackground: some View {
+        ZStack {
+            // Base glass effect
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+            
+            // iOS 26 Liquid Glass overlay
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.15),
+                            Color.white.opacity(0.05),
+                            Color.white.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .blendMode(.overlay)
+            
+            // Subtle border glow
+            Rectangle()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.2),
+                            Color.clear,
+                            Color.white.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
+        }
+    }
+    
+    // MARK: - Modern Play/Pause Button
+    private var playPauseButton: some View {
+        Button(action: {
+            withAnimation(.liquidMotion(duration: 0.3)) {
+                controller.isPlaying ? controller.pause() : controller.play()
+            }
+        }) {
+            Image(systemName: controller.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                .font(.system(size: 44, weight: .medium))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, .white.opacity(0.8)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .scaleEffect(isHovering ? 1.1 : 1.0)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(controller.currentURL == nil)
+        .opacity(controller.currentURL == nil ? 0.3 : 1.0)
+    }
+    
+    // MARK: - Audio Track Selector
+    private var audioTrackSelector: some View {
+        HStack(spacing: 12) {
+            audioTrackButton(
+                title: "原唱",
+                isSelected: controller.currentAudioTrackId == controller.originalTrackId,
+                isEnabled: controller.originalTrackId != nil,
+                action: { controller.selectOriginalTrack() }
+            )
+            
+            audioTrackButton(
+                title: "伴奏",
+                isSelected: controller.currentAudioTrackId == controller.accompanimentTrackId,
+                isEnabled: controller.accompanimentTrackId != nil,
+                action: { controller.selectAccompanimentTrack() }
+            )
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.2))
+        )
+    }
+    
+    private func audioTrackButton(title: String, isSelected: Bool, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            withAnimation(.liquidMotion(duration: 0.2)) {
+                action()
+            }
+        }) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(isSelected ? .black : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? .white : Color.clear)
+                        .animation(.liquidMotion(duration: 0.2), value: isSelected)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1.0 : 0.4)
+    }
+    
+    // MARK: - Secondary Controls
+    private var secondaryControls: some View {
+        HStack(spacing: 16) {
+            // Next song button
+            Button(action: {
+                withAnimation(.liquidMotion(duration: 0.2)) {
                     queue.playNextIfAvailable()
                 }
-                .disabled(!queue.canPlayNext)
-
-                Button("Full Screen") {
-                    if let window = NSApp.keyWindow {
-                        window.toggleFullScreen(nil)
+            }) {
+                Image(systemName: "forward.end.circle")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!queue.canPlayNext)
+            .opacity(queue.canPlayNext ? 1.0 : 0.3)
+            
+            // Stop button
+            Button(action: {
+                withAnimation(.liquidMotion(duration: 0.2)) {
+                    controller.stop()
+                }
+            }) {
+                Image(systemName: "stop.circle")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(controller.currentURL == nil)
+            .opacity(controller.currentURL == nil ? 0.3 : 1.0)
+            
+            // Full screen button
+            Button(action: {
+                if let window = NSApp.keyWindow {
+                    window.toggleFullScreen(nil)
+                }
+            }) {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Floating Song Info Card
+    private func songInfoCard(url: URL) -> some View {
+        VStack {
+            HStack {
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(url.deletingPathExtension().lastPathComponent)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
+                    
+                    if controller.isPlaying {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 6, height: 6)
+                                .scaleEffect(isHovering ? 1.2 : 1.0)
+                                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isHovering)
+                            
+                            Text("正在播放")
+                                .font(.system(size: 11, weight: .regular))
+                                .foregroundColor(.green)
+                        }
                     }
                 }
-
-                Spacer()
-
-                // Audio track quick toggle: 原唱(0) / 伴奏(1)
-                HStack(spacing: 8) {
-                    Button("原唱") { controller.selectOriginalTrack() }
-                        .disabled(controller.originalTrackId == nil)
-                        .buttonStyle(.bordered)
-                        .tint(controller.currentAudioTrackId == controller.originalTrackId ? .accentColor : .gray)
-
-                    Button("伴奏") { controller.selectAccompanimentTrack() }
-                        .disabled(controller.accompanimentTrackId == nil)
-                        .buttonStyle(.bordered)
-                        .tint(controller.currentAudioTrackId == controller.accompanimentTrackId ? .accentColor : .gray)
-                }
-
-                if let url = controller.currentURL {
-                    Text(url.lastPathComponent)
-                        .foregroundStyle(.secondary)
-                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
+                )
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(.ultraThinMaterial)
-            .zIndex(1)
+            .padding(.top, 20)
+            .padding(.trailing, 20)
+            
+            Spacer()
         }
-        .padding(.bottom)
+    }
+}
+
+// MARK: - iOS 26 Animation Extensions
+extension Animation {
+    static func liquidMotion(duration: Double = 0.4) -> Animation {
+        .timingCurve(0.2, 0.8, 0.2, 1.0, duration: duration)
     }
 }
 
