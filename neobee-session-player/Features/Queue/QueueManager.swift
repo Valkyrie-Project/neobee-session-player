@@ -6,17 +6,14 @@ final class QueueManager: ObservableObject {
     @Published private(set) var queue: [URL] = []
     @Published private(set) var currentIndex: Int? = nil
     
-    private let queueKey = "PlaybackQueue"
-    private let currentIndexKey = "CurrentQueueIndex"
 
     init() {
-        loadPersistedQueue()
+        // Queue starts empty each time app launches
     }
 
     func replaceQueue(with urls: [URL]) {
         queue = urls
         currentIndex = 0
-        saveQueue()
     }
 
     func enqueue(_ url: URL) {
@@ -25,7 +22,6 @@ final class QueueManager: ObservableObject {
             currentIndex = 0
             VLCPlayerController.shared.play(url: url)
         }
-        saveQueue()
     }
 
     func playNextIfAvailable() {
@@ -34,7 +30,6 @@ final class QueueManager: ObservableObject {
         guard next < queue.count else { return }
         currentIndex = next
         VLCPlayerController.shared.play(url: queue[next])
-        saveCurrentIndex()
     }
 
     func playPreviousIfAvailable() {
@@ -43,7 +38,6 @@ final class QueueManager: ObservableObject {
         guard prev >= 0, prev < queue.count else { return }
         currentIndex = prev
         VLCPlayerController.shared.play(url: queue[prev])
-        saveCurrentIndex()
     }
 
     var canPlayNext: Bool {
@@ -56,43 +50,69 @@ final class QueueManager: ObservableObject {
         return idx - 1 >= 0
     }
     
-    // MARK: - Persistence
-    
-    private func saveQueue() {
-        let urls = queue.map { $0.absoluteString }
-        UserDefaults.standard.set(urls, forKey: queueKey)
-        saveCurrentIndex()
-    }
-    
-    private func saveCurrentIndex() {
-        if let index = currentIndex {
-            UserDefaults.standard.set(index, forKey: currentIndexKey)
-        } else {
-            UserDefaults.standard.removeObject(forKey: currentIndexKey)
-        }
-    }
-    
-    private func loadPersistedQueue() {
-        guard let urlStrings = UserDefaults.standard.array(forKey: queueKey) as? [String] else {
-            return
-        }
-        
-        queue = urlStrings.compactMap { URL(string: $0) }
-        
-        if UserDefaults.standard.object(forKey: currentIndexKey) != nil {
-            let index = UserDefaults.standard.integer(forKey: currentIndexKey)
-            if index >= 0 && index < queue.count {
-                currentIndex = index
-            }
-        }
-        
-    }
     
     func clearQueue() {
         queue.removeAll()
         currentIndex = nil
-        UserDefaults.standard.removeObject(forKey: queueKey)
-        UserDefaults.standard.removeObject(forKey: currentIndexKey)
+    }
+    
+    // MARK: - Queue Management
+    
+    func removeFromQueue(at index: Int) {
+        guard index >= 0 && index < queue.count else { return }
+        
+        queue.remove(at: index)
+        
+        // Adjust current index if needed
+        if let currentIdx = currentIndex {
+            if index < currentIdx {
+                // Removed item before current, decrement current index
+                currentIndex = currentIdx - 1
+            } else if index == currentIdx {
+                // Removed current item, try to play next or stop
+                if currentIdx < queue.count {
+                    // Play next item at same index
+                    VLCPlayerController.shared.play(url: queue[currentIdx])
+                } else if currentIdx > 0 {
+                    // Play previous item
+                    currentIndex = currentIdx - 1
+                    VLCPlayerController.shared.play(url: queue[currentIdx - 1])
+                } else {
+                    // No more items, stop playback
+                    currentIndex = nil
+                    VLCPlayerController.shared.stop()
+                }
+            }
+        }
+    }
+    
+    func moveToNext(at index: Int) {
+        guard index >= 0 && index < queue.count else { return }
+        guard let currentIdx = currentIndex else { return }
+        
+        // Don't move current playing song
+        if index == currentIdx { return }
+        
+        let item = queue.remove(at: index)
+        // Insert right after current playing song (at currentIdx + 1)
+        let newIndex = min(currentIdx + 1, queue.count)
+        queue.insert(item, at: newIndex)
+        
+        // No need to adjust current index since we're inserting after current
+    }
+    
+    var currentPlayingURL: URL? {
+        guard let idx = currentIndex, idx < queue.count else { return nil }
+        return queue[idx]
+    }
+    
+    var upcomingSongs: [URL] {
+        guard let idx = currentIndex else { return queue }
+        return Array(queue.dropFirst(idx + 1))
+    }
+    
+    var hasSongs: Bool {
+        return !queue.isEmpty
     }
 }
 
