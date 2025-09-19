@@ -31,7 +31,7 @@ struct ContentView: View {
         HStack(spacing: 0) {
             // Left: Always-visible player
             PlayerView(isEmbedded: !isFullScreen)
-                .frame(minWidth: isFullScreen ? nil : 600)
+                .frame(minWidth: isFullScreen ? nil : DesignSystem.Sizes.playerMinWidth)
                 .background(Color.black)
                 .layoutPriority(1)
 
@@ -46,9 +46,9 @@ struct ContentView: View {
                         Spacer()
                         TextField("搜索标题/艺人", text: $query)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(maxWidth: 320)
+                            .frame(maxWidth: DesignSystem.Sizes.searchFieldMaxWidth)
                     }
-                    .padding(8)
+                    .padding(DesignSystem.Spacing.controlPadding)
                     .background(.bar)
 
                     LibraryListView(query: query)
@@ -56,7 +56,7 @@ struct ContentView: View {
                             if libraryScanner.isScanning { ProgressView().padding() }
                         }
                 }
-                .frame(minWidth: 360)
+                .frame(minWidth: DesignSystem.Sizes.libraryMinWidth)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in
