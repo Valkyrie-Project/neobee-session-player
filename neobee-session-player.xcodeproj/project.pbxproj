@@ -539,7 +539,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "NeoBee KTV Player";
-				INFOPLIST_KEY_CFBundleShortVersionString = 0.2.0;
+				INFOPLIST_KEY_CFBundleShortVersionString = 0.2.1;
 				INFOPLIST_KEY_CFBundleVersion = 1;
 				INFOPLIST_KEY_LSUIElement = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app may need camera access for KTV recording features.";
@@ -549,7 +549,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "club.theneobee.ktv-session-player";
 				PRODUCT_NAME = "NeoBee KTV播放器";
 				REGISTER_APP_GROUPS = YES;
@@ -575,7 +575,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "NeoBee KTV Player";
-				INFOPLIST_KEY_CFBundleShortVersionString = 0.2.0;
+				INFOPLIST_KEY_CFBundleShortVersionString = 0.2.1;
 				INFOPLIST_KEY_CFBundleVersion = 1;
 				INFOPLIST_KEY_LSUIElement = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app may need camera access for KTV recording features.";
@@ -585,7 +585,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "club.theneobee.ktv-session-player";
 				PRODUCT_NAME = "NeoBee KTV播放器";
 				REGISTER_APP_GROUPS = YES;
@@ -604,7 +604,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -623,7 +623,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -640,7 +640,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -657,7 +657,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
