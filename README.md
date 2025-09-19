@@ -84,6 +84,18 @@ neobee-session-player/
 
 本项目开源，供个人学习和使用。
 
+## 发布版本
+
+项目使用 GitHub Actions 自动构建和发布：
+
+```bash
+# 发布新版本
+./release.sh 0.0.2
+
+# 查看发布状态
+# 访问 GitHub Releases 页面查看自动构建的 DMG 文件
+```
+
 ## 注意事项
 
 本项目使用 VLCKit（GPL 许可证）。如需分发或修改软件，请确保遵守 GPL 条款。
