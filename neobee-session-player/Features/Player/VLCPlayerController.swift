@@ -79,6 +79,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
                 self.videoSize = size
             }
             self.refreshAudioTracks()
+            // 兜底：进入 playing 时再尝试按偏好应用一次，避免早期调用失败
+            if self.mediaPlayer.state == .playing {
+                self.applyPreferredTrackIfPossible()
+            }
             // Auto-advance when current finished
             switch self.mediaPlayer.state {
             case .ended:
@@ -298,8 +302,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         }
 
         // Only assign if changed to minimize SwiftUI updates
-        if filteredIds != audioTrackIds { audioTrackIds = filteredIds }
-        if filteredNames != audioTrackNames { audioTrackNames = filteredNames }
+        let idsChanged = filteredIds != audioTrackIds
+        let namesChanged = filteredNames != audioTrackNames
+        if idsChanged { audioTrackIds = filteredIds }
+        if namesChanged { audioTrackNames = filteredNames }
 
         // Update current selection from main player state
         let current: Int32 = mediaPlayer.currentAudioTrackIndex
@@ -309,6 +315,11 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         }
 
         logAudioTracks(context: "refresh")
+        
+        // 当音轨列表变为非空或发生变化时，按用户偏好纠正一次当前音轨
+        if !filteredIds.isEmpty {
+            ensurePreferredTrackAppliedIfNeeded()
+        }
     }
 
     var originalTrackId: Int32? { audioTrackIds.indices.contains(0) ? audioTrackIds[0] : nil }
@@ -337,10 +348,42 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     private func applyPreferredTrackIfPossible() {
         switch preferredTrack {
         case .original:
-            if let id = originalTrackId { mediaPlayer.currentAudioTrackIndex = id; currentAudioTrackId = id; logAudioTracks(context: "apply-pref-original") }
+            if let id = originalTrackId {
+                if currentAudioTrackId != id || mediaPlayer.currentAudioTrackIndex != id {
+                    mediaPlayer.currentAudioTrackIndex = id
+                    currentAudioTrackId = id
+                    logAudioTracks(context: "apply-pref-original")
+                }
+            }
         case .accompaniment:
-            if let id = accompanimentTrackId { mediaPlayer.currentAudioTrackIndex = id; currentAudioTrackId = id; logAudioTracks(context: "apply-pref-accompaniment") }
+            if let id = accompanimentTrackId {
+                if currentAudioTrackId != id || mediaPlayer.currentAudioTrackIndex != id {
+                    mediaPlayer.currentAudioTrackIndex = id
+                    currentAudioTrackId = id
+                    logAudioTracks(context: "apply-pref-accompaniment")
+                }
+            }
         }
+        mediaPlayer.audio?.isMuted = false
+    }
+    
+    // 如果当前音轨与偏好不一致，并且对应音轨可用，则纠正之
+    private func ensurePreferredTrackAppliedIfNeeded() {
+        switch preferredTrack {
+        case .original:
+            if let id = originalTrackId, currentAudioTrackId != id || mediaPlayer.currentAudioTrackIndex != id {
+                mediaPlayer.currentAudioTrackIndex = id
+                currentAudioTrackId = id
+                logAudioTracks(context: "ensure-pref-original")
+            }
+        case .accompaniment:
+            if let id = accompanimentTrackId, currentAudioTrackId != id || mediaPlayer.currentAudioTrackIndex != id {
+                mediaPlayer.currentAudioTrackIndex = id
+                currentAudioTrackId = id
+                logAudioTracks(context: "ensure-pref-accompaniment")
+            }
+        }
+        mediaPlayer.audio?.isMuted = false
     }
 
     // MARK: - Volume Persistence and Application
