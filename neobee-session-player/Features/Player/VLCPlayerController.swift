@@ -109,6 +109,29 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     func play(url: URL) {
+        // 验证文件是否存在
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            Task { @MainActor in
+                ErrorHandler.shared.handle(
+                    AppError.fileNotFound(url.path),
+                    context: "播放媒体文件"
+                )
+            }
+            return
+        }
+        
+        // 验证文件格式（仅支持 mkv 与 mpg）
+        let supportedFormats = ["mkv", "mpg"]
+        guard supportedFormats.contains(url.pathExtension.lowercased()) else {
+            Task { @MainActor in
+                ErrorHandler.shared.handle(
+                    AppError.unsupportedFileFormat(url.pathExtension),
+                    context: "播放媒体文件"
+                )
+            }
+            return
+        }
+        
         currentURL = url
         // Reset progress when starting new media
         currentTimeMs = 0
@@ -118,7 +141,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         mediaPlayer.play()
         NotificationCenter.default.post(name: .showPlayer, object: nil)
         // Refresh tracks shortly after playback starts
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + DesignSystem.Animation.trackRefreshDelay) { [weak self] in
             self?.refreshAudioTracks()
             // also try to read video size shortly after start
             if let size = self?.mediaPlayer.videoSize, size.width > 0 && size.height > 0 {
