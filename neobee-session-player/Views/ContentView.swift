@@ -51,10 +51,7 @@ struct ContentView: View {
                     .padding(DesignSystem.Spacing.controlPadding)
                     .background(.bar)
 
-                    LibraryListView(query: query)
-                        .overlay(alignment: .topTrailing) {
-                            if libraryScanner.isScanning { ProgressView().padding() }
-                        }
+                    LibraryListView(query: query, libraryScanner: libraryScanner)
                 }
                 .frame(minWidth: DesignSystem.Sizes.libraryMinWidth)
             }

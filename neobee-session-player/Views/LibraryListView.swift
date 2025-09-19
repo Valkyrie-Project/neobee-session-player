@@ -6,9 +6,11 @@ struct LibraryListView: View {
 
     @FetchRequest private var songs: FetchedResults<Song>
     let query: String
+    let libraryScanner: LibraryScanner
 
-    init(query: String) {
+    init(query: String, libraryScanner: LibraryScanner) {
         self.query = query
+        self.libraryScanner = libraryScanner
         let sort = [NSSortDescriptor(keyPath: \Song.addedAt, ascending: false)]
         let predicate = LibraryListView.makePredicate(for: query)
         _songs = FetchRequest<Song>(
@@ -39,6 +41,13 @@ struct LibraryListView: View {
                     Divider()
                     Button("在 Finder 中显示") { revealInFinder(song) }
                     Button("删除这首", role: .destructive) { deleteSong(song) }
+                }
+            }
+            .overlay {
+                if libraryScanner.isScanning {
+                    ProgressView("正在扫描歌单...")
+                        .padding()
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                 }
             }
             Divider()
