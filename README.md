@@ -84,17 +84,48 @@ neobee-session-player/
 
 本项目开源，供个人学习和使用。
 
-## 发布版本
+## 发布流程
 
-项目使用 GitHub Actions 自动构建和发布：
+项目使用 GitHub Actions 实现完全自动化的版本管理和发布流程：
+
+### 自动版本升级
+
+每次推送代码到 `main` 分支时，系统会根据提交消息自动升级版本号：
+
+- `feat:` 开头 → 升级 minor 版本 (0.1.0 → 0.2.0)
+- `fix:` 开头 → 升级 patch 版本 (0.1.0 → 0.1.1)
+- `BREAKING CHANGE` → 升级 major 版本 (0.1.0 → 1.0.0)
+- 其他提交 → 升级 patch 版本
+
+### 手动发布版本
+
+使用 `release.sh` 脚本手动创建发布版本：
 
 ```bash
-# 发布新版本
-./release.sh 0.0.2
+# 发布新版本（会自动更新版本号并创建 tag）
+./release.sh 0.2.0
 
-# 查看发布状态
-# 访问 GitHub Releases 页面查看自动构建的 DMG 文件
+# 脚本会自动：
+# 1. 更新项目版本号
+# 2. 创建 Git tag
+# 3. 推送 tag 触发构建
+# 4. 构建美观的 DMG 文件
+# 5. 发布到 GitHub Releases
 ```
+
+### 发布流程说明
+
+1. **版本号更新**: 自动或手动更新 `project.pbxproj` 中的版本号
+2. **Tag 创建**: 创建 `v{版本号}` 格式的 Git tag
+3. **自动构建**: GitHub Actions 检测到 tag 推送，触发构建流程
+4. **DMG 生成**: 使用 `create_dmg.sh` 脚本生成专业的 DMG 安装包
+5. **发布**: 自动上传 DMG 到 GitHub Releases，包含详细的发布说明
+
+### 查看发布状态
+
+- **GitHub Actions**: 访问仓库的 Actions 页面查看构建状态
+- **GitHub Releases**: 访问 Releases 页面下载最新版本的 DMG 文件
+- **构建产物**: 每次构建都会生成 `NeoBee-KTV-Player.dmg` 文件
 
 ## 注意事项
 
