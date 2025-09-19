@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import AppKit
 
 // MARK: - Player Control Components
 
@@ -21,13 +22,14 @@ struct PlayPauseButton: View {
 
 struct AudioTrackSelector: View {
     @ObservedObject private var controller = VLCPlayerController.shared
-    @State private var selectedTrack: Int = 0
+    
+    private var isOriginalSelected: Bool { controller.preferredTrack == .original }
+    private var isAccompanimentSelected: Bool { controller.preferredTrack == .accompaniment }
     
     var body: some View {
         HStack(spacing: 2) {
             // 原唱按钮
             Button(action: {
-                selectedTrack = 0
                 controller.selectOriginalTrack()
             }) {
                 HStack(spacing: DesignSystem.Spacing.small) {
@@ -40,21 +42,12 @@ struct AudioTrackSelector: View {
                 .padding(.vertical, DesignSystem.Spacing.small)
                 .background(
                     RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
-                        .fill(selectedTrack == 0 ? Color.accentColor : Color.clear)
+                        .fill(isOriginalSelected ? Color.accentColor : Color.clear)
                 )
-                .foregroundStyle(
-                    selectedTrack == 0 ? 
-                    .white : 
-                    .primary
-                )
+                .foregroundStyle(isOriginalSelected ? .white : .primary)
                 .overlay(
                     RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
-                        .stroke(
-                            selectedTrack == 0 ? 
-                            Color.clear : 
-                            Color.secondary.opacity(0.3), 
-                            lineWidth: 1
-                        )
+                        .stroke(isOriginalSelected ? Color.clear : Color.secondary.opacity(0.3), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
@@ -62,7 +55,6 @@ struct AudioTrackSelector: View {
             
             // 伴奏按钮
             Button(action: {
-                selectedTrack = 1
                 controller.selectAccompanimentTrack()
             }) {
                 HStack(spacing: DesignSystem.Spacing.small) {
@@ -75,33 +67,16 @@ struct AudioTrackSelector: View {
                 .padding(.vertical, DesignSystem.Spacing.small)
                 .background(
                     RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
-                        .fill(selectedTrack == 1 ? Color.accentColor : Color.clear)
+                        .fill(isAccompanimentSelected ? Color.accentColor : Color.clear)
                 )
-                .foregroundStyle(
-                    selectedTrack == 1 ? 
-                    .white : 
-                    .primary
-                )
+                .foregroundStyle(isAccompanimentSelected ? .white : .primary)
                 .overlay(
                     RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
-                        .stroke(
-                            selectedTrack == 1 ? 
-                            Color.clear : 
-                            Color.secondary.opacity(0.3), 
-                            lineWidth: 1
-                        )
+                        .stroke(isAccompanimentSelected ? Color.clear : Color.secondary.opacity(0.3), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
             .disabled(controller.accompanimentTrackId == nil)
-        }
-        .onAppear {
-            // 根据当前播放的音轨设置选择器状态
-            if controller.currentAudioTrackId == controller.originalTrackId {
-                selectedTrack = 0
-            } else if controller.currentAudioTrackId == controller.accompanimentTrackId {
-                selectedTrack = 1
-            }
         }
     }
 }
@@ -131,7 +106,10 @@ struct SecondaryControls: View {
             // Full screen button
             Button(action: {
                 if let window = NSApp.keyWindow {
-                    window.toggleFullScreen(nil)
+                    // Defer to next runloop to avoid colliding with same-frame updates
+                    DispatchQueue.main.async {
+                        window.toggleFullScreen(nil)
+                    }
                 }
             }) {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -184,6 +162,10 @@ struct ControlOverlay: View {
             .padding(.horizontal)
             .padding(.bottom, isFullScreen ? DesignSystem.Spacing.bottomPadding : DesignSystem.Spacing.bottomPaddingEmbedded)
         }
+        // Install keyboard shortcuts for arrow keys
+        .modifier(ArrowKeyShortcutHandler())
+        // Optional: reduce expensive effects during transition
+        //.animation(nil, value: isFullScreen)
     }
 }
 
@@ -193,6 +175,10 @@ struct ProgressSeekBar: View {
     @ObservedObject private var controller = VLCPlayerController.shared
     @State private var isScrubbing: Bool = false
     @State private var localProgress: Double = 0.0 // 0..1 while scrubbing
+    
+    // Debounce state
+    @State private var lastSeekAt: CFTimeInterval = 0
+    private let seekInterval: CFTimeInterval = 0.20 // 放宽节流：~5 Hz
     
     private func formatTime(_ ms: Int64) -> String {
         return DesignSystem.formatTime(ms)
@@ -211,20 +197,29 @@ struct ProgressSeekBar: View {
             Slider(value: Binding<Double>(
                 get: { progress },
                 set: { newValue in
+                    // During drag, update local state only
                     isScrubbing = true
                     localProgress = newValue
+                    // Debounced seek while scrubbing (milliseconds)
+                    let now = CACurrentMediaTime()
+                    if now - lastSeekAt >= seekInterval {
+                        lastSeekAt = now
+                        let targetMs = Int64(Double(controller.durationMs) * newValue)
+                        controller.seek(toMilliseconds: max(0, min(targetMs, controller.durationMs)))
+                    }
                 }
             ), in: 0...1, onEditingChanged: { editing in
                 // Toggle scrubbing state and perform a final seek when user releases the knob
                 isScrubbing = editing
                 if !editing {
-                    controller.seek(toProgress: Float(localProgress))
+                    let finalMs = Int64(Double(controller.durationMs) * localProgress)
+                    controller.seek(toMilliseconds: max(0, min(finalMs, controller.durationMs)))
                 }
             })
             .frame(minWidth: DesignSystem.Sizes.progressBarMinWidth, maxWidth: DesignSystem.Sizes.progressBarMaxWidth)
-            .onChange(of: localProgress) { _, newValue in
-                // Throttle seek calls during dragging
-                controller.seek(toProgress: Float(newValue))
+            .transaction { t in
+                // Disable implicit animations to reduce layout work during frequent updates
+                t.animation = nil
             }
             Text(formatTime(controller.durationMs))
                 .font(DesignSystem.Typography.timeLabel)
@@ -244,30 +239,103 @@ struct ProgressSeekBar: View {
 
 struct VolumeControl: View {
     @ObservedObject private var controller = VLCPlayerController.shared
+    @State private var lastNonZeroVolume: Float = 1.0
     
-    // Simple linear volume control - no logarithmic scaling for now
-    private func linearToLog(_ linear: Float) -> Float {
-        return linear
-    }
-    
-    private func logToLinear(_ log: Float) -> Float {
-        return log
-    }
+    private var isMuted: Bool { controller.volume <= 0.0001 }
     
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.medium) {
-            Image(systemName: DesignSystem.volumeIconName(for: controller.volume))
-                .font(.system(size: DesignSystem.Sizes.volumeIconSize))
-                .foregroundStyle(.primary)
+            // Mute/Unmute toggle
+            Button(action: {
+                if isMuted {
+                    controller.volume = max(lastNonZeroVolume, 0.1) // restore to previous or a small audible level
+                } else {
+                    lastNonZeroVolume = controller.volume
+                    controller.volume = 0.0
+                }
+            }) {
+                Image(systemName: DesignSystem.volumeIconName(for: controller.volume))
+                    .font(.system(size: DesignSystem.Sizes.volumeIconSize))
+            }
+            .buttonStyle(.borderless)
+            .help(isMuted ? "取消静音" : "静音")
+            
+            // Volume slider
             Slider(value: Binding<Double>(
-                get: { Double(linearToLog(controller.volume)) },
-                set: { newVal in 
-                    let logVal = Float(newVal)
-                    controller.volume = logToLinear(logVal)
+                get: { Double(controller.volume) },
+                set: { newVal in
+                    let v = Float(newVal)
+                    controller.volume = v
+                    if v > 0 { lastNonZeroVolume = v }
                 }
             ), in: 0...1)
-            .frame(width: DesignSystem.Sizes.volumeSliderWidth)
+            .frame(width: 120)
         }
         .frame(maxHeight: DesignSystem.Sizes.volumeControlMaxHeight)
     }
 }
+
+// MARK: - Arrow Key Shortcut Handler
+
+private struct ArrowKeyShortcutHandler: ViewModifier {
+    @ObservedObject private var controller = VLCPlayerController.shared
+    @State private var monitor: Any?
+    
+    private let seekStepSeconds: Double = 5.0
+    private let volumeStep: Float = 0.05
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                // Install local monitor for keyDown events
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    handle(event: event)
+                }
+            }
+            .onDisappear {
+                // Remove monitor to avoid leaks/duplicates
+                if let monitor {
+                    NSEvent.removeMonitor(monitor)
+                }
+                monitor = nil
+            }
+    }
+    
+    private func handle(event: NSEvent) -> NSEvent? {
+        guard controller.currentURL != nil else { return event } // only when media is loaded
+        
+        switch Int(event.keyCode) {
+        case kVK_LeftArrow:
+            performSeek(deltaSeconds: -seekStepSeconds)
+            return nil
+        case kVK_RightArrow:
+            performSeek(deltaSeconds: seekStepSeconds)
+            return nil
+        case kVK_UpArrow:
+            adjustVolume(by: volumeStep)
+            return nil
+        case kVK_DownArrow:
+            adjustVolume(by: -volumeStep)
+            return nil
+        default:
+            break
+        }
+        return event
+    }
+    
+    private func performSeek(deltaSeconds: Double) {
+        let durationMs = max(0, controller.durationMs)
+        guard durationMs > 0 else { return }
+        let currentMs = max(0, controller.currentTimeMs)
+        let targetMs = min(Int64(Double(durationMs)), max(Int64(0), currentMs + Int64(deltaSeconds * 1000.0)))
+        controller.seek(toMilliseconds: targetMs)
+    }
+    
+    private func adjustVolume(by delta: Float) {
+        let newValue = min(1.0, max(0.0, controller.volume + delta))
+        controller.volume = newValue
+    }
+}
+
+// Import Carbon for virtual key codes
+import Carbon.HIToolbox
