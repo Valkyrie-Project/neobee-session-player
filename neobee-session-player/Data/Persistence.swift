@@ -57,7 +57,9 @@ struct PersistenceController {
                 Self.handleCorruptedStore(container: container, storeDescription: storeDescription)
             }
         })
+        // Merge background changes into the view context and set a merge policy to reduce conflicts
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
     
     /// 处理损坏的CoreData存储文件
@@ -106,3 +108,4 @@ struct PersistenceController {
         }
     }
 }
+
