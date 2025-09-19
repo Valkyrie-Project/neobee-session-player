@@ -53,13 +53,14 @@
 2. **自动构建和分发**
 
    ```bash
-   # 一键构建并创建DMG安装包
+   # 一键构建并创建DMG安装包（包含测试验证）
    ./create_dmg.sh
    ```
 
    脚本会自动：
 
    - 检查并安装 CocoaPods 依赖
+   - **运行所有测试**（25个单元测试 + 4个UI测试）
    - 构建 Release 版本
    - 创建包含 VLCKit 的 DMG 安装包
    - 验证 VLCKit 正确嵌入
@@ -74,7 +75,14 @@
    open neobee-session-player.xcworkspace
    ```
 
-4. **构建和运行**
+4. **运行测试**
+
+   ```bash
+   # 快速运行所有测试
+   ./run_tests.sh
+   ```
+
+5. **构建和运行**
    - 在 Xcode 中选择 `neobee-session-player` scheme
    - 点击运行按钮或按 `Cmd+R`
 
@@ -120,7 +128,9 @@
 
 ```
 neobee-session-player/
-├── create_dmg.sh               # 构建和分发脚本
+├── create_dmg.sh               # 构建和分发脚本（含测试验证）
+├── run_tests.sh                # 独立测试脚本
+├── configure_pre_build_tests.md # 测试配置指南
 ├── neobee-session-player/
 │   ├── App/                     # 应用入口
 │   │   └── neobee_session_playerApp.swift
@@ -146,20 +156,39 @@ neobee-session-player/
 
 ## 🧪 测试
 
-项目包含全面的单元测试覆盖：
+项目包含全面的测试覆盖，支持多种运行方式：
 
+### 快速测试
 ```bash
-# 运行所有测试
+# 使用便捷脚本运行所有测试
+./run_tests.sh
+```
+
+### 手动测试
+```bash
+# 使用 xcodebuild 运行测试
 xcodebuild test -workspace neobee-session-player.xcworkspace \
                 -scheme neobee-session-player \
                 -destination 'platform=macOS'
 ```
 
-测试覆盖：
+### 测试统计
+- **单元测试**: 25个测试，覆盖核心业务逻辑
+- **UI测试**: 4个测试，验证用户界面和性能
+- **总运行时间**: 约30秒
 
+### 测试覆盖
 - ✅ 队列管理逻辑
-- ✅ 文件格式验证
+- ✅ 文件格式验证  
 - ✅ 播放器控制逻辑
+- ✅ UI组件状态管理
+- ✅ 音轨选择逻辑
+- ✅ 进度控制逻辑
+
+### 构建前测试
+- 发布构建会自动运行测试验证
+- 测试失败时构建会立即停止
+- 确保发布版本的质量和稳定性
 
 ## 📝 开发日志
 
@@ -167,6 +196,8 @@ xcodebuild test -workspace neobee-session-player.xcworkspace \
 
 - **队列管理**: 已点歌曲区域，支持删除和"顶到下一首"操作
 - **自动化构建**: 一键构建脚本，自动处理依赖和分发
+- **测试保障**: 构建前自动运行测试，确保代码质量
+- **多平台支持**: 支持 Intel 和 Apple Silicon Mac
 
 ## 📄 许可证
 
