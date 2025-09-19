@@ -34,9 +34,9 @@
 		2ED6994DA413692B5BE35C36 /* Pods-Pods-neobee-session-player-neobee-session-player.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pods-neobee-session-player-neobee-session-player.debug.xcconfig"; path = "Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player.debug.xcconfig"; sourceTree = "<group>"; };
 		40A330A2C975470D06715E07 /* Pods-neobee-session-playerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-neobee-session-playerTests.release.xcconfig"; path = "Target Support Files/Pods-neobee-session-playerTests/Pods-neobee-session-playerTests.release.xcconfig"; sourceTree = "<group>"; };
 		5AD5E18CC3FD7E7055E717A8 /* Pods-Pods-neobee-session-player-neobee-session-player.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pods-neobee-session-player-neobee-session-player.release.xcconfig"; path = "Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player.release.xcconfig"; sourceTree = "<group>"; };
-		6A1539032E71A500005BDA9D /* neobee-session-player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "neobee-session-player.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A1539162E71A501005BDA9D /* neobee-session-playerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "neobee-session-playerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A1539202E71A501005BDA9D /* neobee-session-playerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "neobee-session-playerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A1539032E71A500005BDA9D /* NeoBee KTV播放器.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NeoBee KTV播放器.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A1539162E71A501005BDA9D /* NeoBee KTV播放器.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NeoBee KTV播放器.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A1539202E71A501005BDA9D /* NeoBee KTV播放器.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NeoBee KTV播放器.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		79CCBA44879E6FB777F0307F /* Pods_neobee_session_playerUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_neobee_session_playerUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A490363AA1318DB3F74258D /* Pods-neobee-session-playerUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-neobee-session-playerUITests.debug.xcconfig"; path = "Target Support Files/Pods-neobee-session-playerUITests/Pods-neobee-session-playerUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		9BD3C36D947D73D0F54466C3 /* Pods_Pods_neobee_session_player_neobee_session_player.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Pods_neobee_session_player_neobee_session_player.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -47,22 +47,16 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6A1539052E71A500005BDA9D /* neobee-session-player */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "neobee-session-player";
 			sourceTree = "<group>";
 		};
 		6A1539192E71A501005BDA9D /* neobee-session-playerTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "neobee-session-playerTests";
 			sourceTree = "<group>";
 		};
 		6A1539232E71A501005BDA9D /* neobee-session-playerUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "neobee-session-playerUITests";
 			sourceTree = "<group>";
 		};
@@ -111,9 +105,9 @@
 		6A1539042E71A500005BDA9D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6A1539032E71A500005BDA9D /* neobee-session-player.app */,
-				6A1539162E71A501005BDA9D /* neobee-session-playerTests.xctest */,
-				6A1539202E71A501005BDA9D /* neobee-session-playerUITests.xctest */,
+				6A1539032E71A500005BDA9D /* NeoBee KTV播放器.app */,
+				6A1539162E71A501005BDA9D /* NeoBee KTV播放器.xctest */,
+				6A1539202E71A501005BDA9D /* NeoBee KTV播放器.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -163,7 +157,7 @@
 			);
 			name = "neobee-session-player";
 			productName = "neobee-session-player";
-			productReference = 6A1539032E71A500005BDA9D /* neobee-session-player.app */;
+			productReference = 6A1539032E71A500005BDA9D /* NeoBee KTV播放器.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6A1539152E71A501005BDA9D /* neobee-session-playerTests */ = {
@@ -185,7 +179,7 @@
 			);
 			name = "neobee-session-playerTests";
 			productName = "neobee-session-playerTests";
-			productReference = 6A1539162E71A501005BDA9D /* neobee-session-playerTests.xctest */;
+			productReference = 6A1539162E71A501005BDA9D /* NeoBee KTV播放器.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		6A15391F2E71A501005BDA9D /* neobee-session-playerUITests */ = {
@@ -207,7 +201,7 @@
 			);
 			name = "neobee-session-playerUITests";
 			productName = "neobee-session-playerUITests";
-			productReference = 6A1539202E71A501005BDA9D /* neobee-session-playerUITests.xctest */;
+			productReference = 6A1539202E71A501005BDA9D /* NeoBee KTV播放器.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -287,9 +281,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
