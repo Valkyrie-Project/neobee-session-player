@@ -1,0 +1,88 @@
+name: Auto Version Update
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - '.github/workflows/**'
+      - '*.md'
+  workflow_dispatch:
+
+jobs:
+  update-version:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Calculate new version
+        id: version
+        run: |
+          # 获取当前版本号
+          CURRENT_VERSION=$(grep -o 'MARKETING_VERSION = [0-9]*\.[0-9]*\.[0-9]*' neobee-session-player.xcodeproj/project.pbxproj | head -1 | sed 's/MARKETING_VERSION = //')
+
+          if [ -z "$CURRENT_VERSION" ]; then
+            CURRENT_VERSION="0.0.0"
+          fi
+
+          echo "Current version: $CURRENT_VERSION"
+
+          # 解析版本号
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          # 检查提交信息来决定版本升级类型
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          if [[ $COMMIT_MSG == *"BREAKING CHANGE"* ]] || [[ $COMMIT_MSG == *"major:"* ]]; then
+            # 主版本号升级
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [[ $COMMIT_MSG == *"feat:"* ]] || [[ $COMMIT_MSG == *"feature:"* ]]; then
+            # 次版本号升级
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            # 补丁版本号升级
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update version in project
+        if: steps.version.outputs.NEW_VERSION != steps.version.outputs.CURRENT_VERSION
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.NEW_VERSION }}"
+
+          # 更新项目文件中的版本号
+          sed -i '' "s/MARKETING_VERSION = [0-9]*\.[0-9]*\.[0-9]*/MARKETING_VERSION = $NEW_VERSION/g" neobee-session-player.xcodeproj/project.pbxproj
+          sed -i '' "s/INFOPLIST_KEY_CFBundleShortVersionString = [0-9]*\.[0-9]*\.[0-9]*/INFOPLIST_KEY_CFBundleShortVersionString = $NEW_VERSION/g" neobee-session-player.xcodeproj/project.pbxproj
+
+      - name: Commit version update
+        if: steps.version.outputs.NEW_VERSION != steps.version.outputs.CURRENT_VERSION
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.NEW_VERSION }}"
+
+          git add neobee-session-player.xcodeproj/project.pbxproj
+          git commit -m "chore: 自动升级版本到 $NEW_VERSION [skip ci]"
+          git push origin main
+
+      - name: Create tag
+        if: steps.version.outputs.NEW_VERSION != steps.version.outputs.CURRENT_VERSION
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.NEW_VERSION }}"
+          git tag -a "v$NEW_VERSION" -m "Auto-generated release $NEW_VERSION"
+          git push origin "v$NEW_VERSION"
