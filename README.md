@@ -82,7 +82,7 @@ neobee-session-player/
 
 ## 许可证
 
-本项目开源，供个人学习和使用。
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
 
 ## 发布流程
 
@@ -129,4 +129,4 @@ neobee-session-player/
 
 ## 注意事项
 
-本项目使用 VLCKit（GPL 许可证）。如需分发或修改软件，请确保遵守 GPL 条款。
+本项目使用 VLCKit（GPL 许可证）作为媒体播放依赖。虽然本项目采用 MIT 许可证，但使用 VLCKit 的应用程序需要遵守 GPL 条款。如需商业分发，请考虑 VLCKit 的商业许可选项。
