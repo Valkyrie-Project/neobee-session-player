@@ -11,7 +11,7 @@ struct PlayPauseButton: View {
             controller.isPlaying ? controller.pause() : controller.play()
         }) {
             Image(systemName: controller.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                .font(.system(size: 44))
+                .font(.system(size: DesignSystem.Sizes.playPauseButtonSize))
                 .foregroundStyle(.primary)
         }
         .buttonStyle(.borderless)
@@ -30,16 +30,16 @@ struct AudioTrackSelector: View {
                 selectedTrack = 0
                 controller.selectOriginalTrack()
             }) {
-                HStack(spacing: 3) {
+                HStack(spacing: DesignSystem.Spacing.small) {
                     Image(systemName: "person.wave.2")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DesignSystem.Typography.audioTrackButton)
                     Text("原唱")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DesignSystem.Typography.audioTrackButton)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
+                .padding(.horizontal, DesignSystem.Spacing.medium)
+                .padding(.vertical, DesignSystem.Spacing.small)
                 .background(
-                    RoundedRectangle(cornerRadius: 5)
+                    RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
                         .fill(selectedTrack == 0 ? Color.accentColor : Color.clear)
                 )
                 .foregroundStyle(
@@ -48,7 +48,7 @@ struct AudioTrackSelector: View {
                     .primary
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 5)
+                    RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
                         .stroke(
                             selectedTrack == 0 ? 
                             Color.clear : 
@@ -65,16 +65,16 @@ struct AudioTrackSelector: View {
                 selectedTrack = 1
                 controller.selectAccompanimentTrack()
             }) {
-                HStack(spacing: 3) {
+                HStack(spacing: DesignSystem.Spacing.small) {
                     Image(systemName: "music.note")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DesignSystem.Typography.audioTrackButton)
                     Text("伴奏")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DesignSystem.Typography.audioTrackButton)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
+                .padding(.horizontal, DesignSystem.Spacing.medium)
+                .padding(.vertical, DesignSystem.Spacing.small)
                 .background(
-                    RoundedRectangle(cornerRadius: 5)
+                    RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
                         .fill(selectedTrack == 1 ? Color.accentColor : Color.clear)
                 )
                 .foregroundStyle(
@@ -83,7 +83,7 @@ struct AudioTrackSelector: View {
                     .primary
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 5)
+                    RoundedRectangle(cornerRadius: DesignSystem.Sizes.audioTrackButtonCornerRadius)
                         .stroke(
                             selectedTrack == 1 ? 
                             Color.clear : 
@@ -111,11 +111,11 @@ struct SecondaryControls: View {
     @ObservedObject private var queue = QueueManager.shared
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Spacing.extraLarge) {
             // Next song button
             Button(action: { queue.playNextIfAvailable() }) {
                 Image(systemName: "forward.end.circle")
-                    .font(.system(size: 24))
+                    .font(.system(size: DesignSystem.Sizes.secondaryControlSize))
             }
             .buttonStyle(.borderless)
             .disabled(!queue.canPlayNext)
@@ -123,7 +123,7 @@ struct SecondaryControls: View {
             // Stop button
             Button(action: { controller.stop() }) {
                 Image(systemName: "stop.circle")
-                    .font(.system(size: 24))
+                    .font(.system(size: DesignSystem.Sizes.secondaryControlSize))
             }
             .buttonStyle(.borderless)
             .disabled(controller.currentURL == nil)
@@ -135,7 +135,7 @@ struct SecondaryControls: View {
                 }
             }) {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 20))
+                    .font(.system(size: DesignSystem.Sizes.fullScreenButtonSize))
             }
             .buttonStyle(.borderless)
         }
@@ -146,9 +146,9 @@ struct SecondaryControls: View {
 
 struct ControlBackground: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(.thickMaterial)
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
+        RoundedRectangle(cornerRadius: DesignSystem.Sizes.cornerRadius)
+            .fill(DesignSystem.Colors.controlBackground)
+            .shadow(color: DesignSystem.Colors.shadowColor, radius: 8, x: 0, y: 2)
     }
 }
 
@@ -163,7 +163,7 @@ struct ControlOverlay: View {
             Spacer()
             
             // Main control panel - single row layout
-            HStack(spacing: 16) {
+            HStack(spacing: DesignSystem.Spacing.extraLarge) {
                 // Play/Pause button
                 PlayPauseButton()
                 
@@ -179,10 +179,10 @@ struct ControlOverlay: View {
                 // Volume slider
                 VolumeControl()
             }
-            .padding()
+            .padding(DesignSystem.Spacing.controlPadding)
             .background(ControlBackground())
             .padding(.horizontal)
-            .padding(.bottom, isFullScreen ? 40 : 32)
+            .padding(.bottom, isFullScreen ? DesignSystem.Spacing.bottomPadding : DesignSystem.Spacing.bottomPaddingEmbedded)
         }
     }
 }
@@ -195,15 +195,7 @@ struct ProgressSeekBar: View {
     @State private var localProgress: Double = 0.0 // 0..1 while scrubbing
     
     private func formatTime(_ ms: Int64) -> String {
-        let totalSeconds = Int(ms / 1000)
-        let s = totalSeconds % 60
-        let m = (totalSeconds / 60) % 60
-        let h = totalSeconds / 3600
-        if h > 0 {
-            return String(format: "%d:%02d:%02d", h, m, s)
-        } else {
-            return String(format: "%02d:%02d", m, s)
-        }
+        return DesignSystem.formatTime(ms)
     }
     
     var body: some View {
@@ -211,11 +203,11 @@ struct ProgressSeekBar: View {
             if isScrubbing { return localProgress }
             return Double(controller.currentPosition)
         }()
-        HStack(spacing: 8) {
+        HStack(spacing: DesignSystem.Spacing.medium) {
             Text(formatTime(controller.currentTimeMs))
-                .font(.caption)
+                .font(DesignSystem.Typography.timeLabel)
                 .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .leading)
+                .frame(width: DesignSystem.Sizes.timeLabelWidth, alignment: .leading)
             Slider(value: Binding<Double>(
                 get: { progress },
                 set: { newValue in
@@ -223,7 +215,7 @@ struct ProgressSeekBar: View {
                     localProgress = newValue
                 }
             ), in: 0...1)
-            .frame(minWidth: 120, maxWidth: 200)
+            .frame(minWidth: DesignSystem.Sizes.progressBarMinWidth, maxWidth: DesignSystem.Sizes.progressBarMaxWidth)
             .onChange(of: localProgress) { _, newValue in
                 // Throttle seek calls during dragging
                 controller.seek(toProgress: Float(newValue))
@@ -235,9 +227,9 @@ struct ProgressSeekBar: View {
                 }
             }
             Text(formatTime(controller.durationMs))
-                .font(.caption)
+                .font(DesignSystem.Typography.timeLabel)
                 .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .trailing)
+                .frame(width: DesignSystem.Sizes.timeLabelWidth, alignment: .trailing)
         }
         .disabled(controller.currentURL == nil)
         .onChange(of: controller.currentURL) { _, _ in
@@ -263,9 +255,9 @@ struct VolumeControl: View {
     }
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: controller.volume <= 0.001 ? "speaker.slash.fill" : (controller.volume < 0.5 ? "speaker.fill" : "speaker.wave.2.fill"))
-                .font(.system(size: 14))
+        HStack(spacing: DesignSystem.Spacing.medium) {
+            Image(systemName: DesignSystem.volumeIconName(for: controller.volume))
+                .font(.system(size: DesignSystem.Sizes.volumeIconSize))
                 .foregroundStyle(.primary)
             Slider(value: Binding<Double>(
                 get: { Double(linearToLog(controller.volume)) },
@@ -274,8 +266,8 @@ struct VolumeControl: View {
                     controller.volume = logToLinear(logVal)
                 }
             ), in: 0...1)
-            .frame(width: 160)
+            .frame(width: DesignSystem.Sizes.volumeSliderWidth)
         }
-        .frame(maxHeight: 24)
+        .frame(maxHeight: DesignSystem.Sizes.volumeControlMaxHeight)
     }
 }
