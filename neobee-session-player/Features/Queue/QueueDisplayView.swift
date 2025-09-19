@@ -6,14 +6,14 @@ struct QueueDisplayView: View {
     @ObservedObject private var controller = VLCPlayerController.shared
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.large) {
             Text("已点歌曲")
-                .font(.headline)
+                .font(DesignSystem.Typography.queueTitle)
                 .foregroundStyle(.primary)
             
             if queue.hasSongs {
                 ScrollView {
-                    VStack(spacing: 8) {
+                    VStack(spacing: DesignSystem.Spacing.medium) {
                         // Current playing song
                         if let currentURL = queue.currentPlayingURL {
                             CurrentPlayingRow(url: currentURL)
@@ -34,17 +34,17 @@ struct QueueDisplayView: View {
                             }
                         }
                     }
-                    .padding()
+                    .padding(DesignSystem.Spacing.controlPadding)
                 }
-                .frame(maxHeight: 200) // Fixed maximum height
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .frame(maxHeight: DesignSystem.Sizes.queueMaxHeight) // Fixed maximum height
+                .background(DesignSystem.Colors.controlOverlay, in: RoundedRectangle(cornerRadius: DesignSystem.Sizes.smallCornerRadius))
             } else {
                 Text("暂无已点歌曲")
                     .foregroundStyle(.secondary)
                     .italic()
-                    .frame(maxHeight: 200) // Same height as when populated
+                    .frame(maxHeight: DesignSystem.Sizes.queueMaxHeight) // Same height as when populated
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .background(DesignSystem.Colors.controlOverlay, in: RoundedRectangle(cornerRadius: DesignSystem.Sizes.smallCornerRadius))
             }
         }
     }
@@ -58,16 +58,16 @@ struct CurrentPlayingRow: View {
         HStack {
             Image(systemName: "play.circle.fill")
                 .foregroundStyle(.green)
-                .font(.system(size: 16))
+                .font(.system(size: DesignSystem.Sizes.statusIconSize))
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
                 Text(url.deletingPathExtension().lastPathComponent)
-                    .font(.subheadline)
+                    .font(DesignSystem.Typography.queueItemTitle)
                     .fontWeight(.medium)
                     .lineLimit(1)
                 
                 Text("正在播放")
-                    .font(.caption)
+                    .font(DesignSystem.Typography.queueItemSubtitle)
                     .foregroundStyle(.secondary)
             }
             
@@ -75,18 +75,18 @@ struct CurrentPlayingRow: View {
             
             if controller.isPlaying {
                 Text("播放中")
-                    .font(.caption)
+                    .font(DesignSystem.Typography.statusBadge)
                     .foregroundStyle(.green)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.green.opacity(0.2), in: RoundedRectangle(cornerRadius: 4))
+                    .padding(.horizontal, DesignSystem.Spacing.medium)
+                    .padding(.vertical, DesignSystem.Spacing.small)
+                    .background(.green.opacity(DesignSystem.Opacity.statusBadge), in: RoundedRectangle(cornerRadius: DesignSystem.Sizes.statusBadgeCornerRadius))
             } else {
                 Text("已暂停")
-                    .font(.caption)
+                    .font(DesignSystem.Typography.statusBadge)
                     .foregroundStyle(.orange)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.orange.opacity(0.2), in: RoundedRectangle(cornerRadius: 4))
+                    .padding(.horizontal, DesignSystem.Spacing.medium)
+                    .padding(.vertical, DesignSystem.Spacing.small)
+                    .background(.orange.opacity(DesignSystem.Opacity.statusBadge), in: RoundedRectangle(cornerRadius: DesignSystem.Sizes.statusBadgeCornerRadius))
             }
         }
     }
@@ -102,27 +102,27 @@ struct UpcomingSongRow: View {
     var body: some View {
         HStack {
             Text("\(index + 1)")
-                .font(.caption)
+                .font(DesignSystem.Typography.queueItemSubtitle)
                 .foregroundStyle(.secondary)
-                .frame(width: 20, alignment: .leading)
+                .frame(width: DesignSystem.Sizes.queueIndexWidth, alignment: .leading)
             
             Image(systemName: "music.note")
                 .foregroundStyle(.secondary)
-                .font(.system(size: 14))
+                .font(.system(size: DesignSystem.Sizes.volumeIconSize))
             
             Text(url.deletingPathExtension().lastPathComponent)
-                .font(.subheadline)
+                .font(DesignSystem.Typography.queueItemTitle)
                 .lineLimit(1)
             
             Spacer()
             
-            HStack(spacing: 8) {
+            HStack(spacing: DesignSystem.Spacing.medium) {
                 if canMoveToNext {
                     Button("顶到下一首") {
                         onMoveToNext()
                     }
                     .buttonStyle(.borderless)
-                    .font(.caption)
+                    .font(DesignSystem.Typography.queueItemSubtitle)
                     .foregroundStyle(.blue)
                 }
                 
@@ -130,7 +130,7 @@ struct UpcomingSongRow: View {
                     onRemove()
                 }
                 .buttonStyle(.borderless)
-                .font(.caption)
+                .font(DesignSystem.Typography.queueItemSubtitle)
                 .foregroundStyle(.red)
             }
         }
