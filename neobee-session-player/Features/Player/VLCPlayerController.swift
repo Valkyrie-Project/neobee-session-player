@@ -33,6 +33,10 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     private var lastAudioLogSignature: String?
     private var lastAudioLogAt: Date = .distantPast
     let videoView: VLCVideoView
+    // Track whether stop was triggered by user
+    private var userInitiatedStop: Bool = false
+    // Ensure we only auto-advance once per track
+    private var didAdvanceForCurrent: Bool = false
 
     override init() {
         self.videoView = VLCVideoView()
@@ -66,9 +70,24 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
                 self.videoSize = size
             }
             self.refreshAudioTracks()
-            // Auto-advance when current ended
-            if self.mediaPlayer.state == .ended {
-                QueueManager.shared.playNextIfAvailable()
+            // Auto-advance when current finished
+            switch self.mediaPlayer.state {
+            case .ended:
+                if !self.didAdvanceForCurrent {
+                    self.didAdvanceForCurrent = true
+                    QueueManager.shared.playNextIfAvailable()
+                }
+            case .stopped:
+                if self.userInitiatedStop {
+                    self.userInitiatedStop = false
+                } else {
+                    if !self.didAdvanceForCurrent {
+                        self.didAdvanceForCurrent = true
+                        QueueManager.shared.playNextIfAvailable()
+                    }
+                }
+            default:
+                break
             }
         }
     }
@@ -84,6 +103,11 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
                 self?.currentTimeMs = newCurrentMs
                 self?.durationMs = newDurationMs
             }
+        }
+        // Fallback: if we reach the end threshold, try to advance once
+        if newDurationMs > 0 && newCurrentMs >= newDurationMs - 500 && !didAdvanceForCurrent {
+            didAdvanceForCurrent = true
+            QueueManager.shared.playNextIfAvailable()
         }
         let size = mediaPlayer.videoSize
         if size.width > 0 && size.height > 0 && size != videoSize {
@@ -109,6 +133,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     func play(url: URL) {
+        userInitiatedStop = false
         // 验证文件是否存在
         guard FileManager.default.fileExists(atPath: url.path) else {
             Task { @MainActor in
@@ -133,6 +158,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         }
         
         currentURL = url
+        didAdvanceForCurrent = false
         // Reset progress when starting new media
         currentTimeMs = 0
         durationMs = 0
@@ -154,6 +180,8 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     func play() {
+        userInitiatedStop = false
+        didAdvanceForCurrent = false
         mediaPlayer.play()
     }
 
@@ -170,6 +198,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     func stop() {
+        userInitiatedStop = true
         mediaPlayer.stop()
         isPlaying = false
         currentTimeMs = 0

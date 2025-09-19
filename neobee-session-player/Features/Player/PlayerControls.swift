@@ -214,17 +214,17 @@ struct ProgressSeekBar: View {
                     isScrubbing = true
                     localProgress = newValue
                 }
-            ), in: 0...1)
+            ), in: 0...1, onEditingChanged: { editing in
+                // Toggle scrubbing state and perform a final seek when user releases the knob
+                isScrubbing = editing
+                if !editing {
+                    controller.seek(toProgress: Float(localProgress))
+                }
+            })
             .frame(minWidth: DesignSystem.Sizes.progressBarMinWidth, maxWidth: DesignSystem.Sizes.progressBarMaxWidth)
             .onChange(of: localProgress) { _, newValue in
                 // Throttle seek calls during dragging
                 controller.seek(toProgress: Float(newValue))
-            }
-            .onChange(of: isScrubbing) { _, scrubbing in
-                if !scrubbing {
-                    // Final seek when scrubbing finishes
-                    controller.seek(toProgress: Float(localProgress))
-                }
             }
             Text(formatTime(controller.durationMs))
                 .font(DesignSystem.Typography.timeLabel)
