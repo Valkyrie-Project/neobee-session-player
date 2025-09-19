@@ -29,14 +29,23 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     private let mediaPlayer: VLCMediaPlayer
-    // Single-player approach: no secondary player, no sync timer
+    let videoView: VLCVideoView
+
+    // Logging + throttling
     private var lastAudioLogSignature: String?
     private var lastAudioLogAt: Date = .distantPast
-    let videoView: VLCVideoView
+    private var lastProgressPublishAt: CFTimeInterval = 0
+    private let progressPublishInterval: CFTimeInterval = 1.0 / 30.0 // ~30 Hz
+
     // Track whether stop was triggered by user
     private var userInitiatedStop: Bool = false
     // Ensure we only auto-advance once per track
     private var didAdvanceForCurrent: Bool = false
+
+    // Track refresh state to avoid redundant publishes/retries
+    private var lastRawAudioTrackIds: [Int32] = []
+    private var lastRawAudioTrackNames: [String] = []
+    private var pendingTrackRefreshRetry: Bool = false
 
     override init() {
         self.videoView = VLCVideoView()
@@ -80,6 +89,8 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             case .stopped:
                 if self.userInitiatedStop {
                     self.userInitiatedStop = false
+                    // Ensure we don't accidentally auto-advance after a user stop
+                    self.didAdvanceForCurrent = true
                 } else {
                     if !self.didAdvanceForCurrent {
                         self.didAdvanceForCurrent = true
@@ -93,32 +104,44 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
     }
 
     func mediaPlayerTimeChanged(_ aNotification: Notification) {
-        // Update progress and lazily update video size once it becomes known
-        let time = mediaPlayer.time
-        let length = mediaPlayer.media?.length
-        let newCurrentMs = Int64(time.intValue)
-        let newDurationMs = Int64(length?.intValue ?? 0)
-        if newCurrentMs != currentTimeMs || newDurationMs != durationMs {
-            DispatchQueue.main.async { [weak self] in
-                self?.currentTimeMs = newCurrentMs
-                self?.durationMs = newDurationMs
+        // Throttle publishes to reduce SwiftUI recomputation
+        let now = CACurrentMediaTime()
+        if now - lastProgressPublishAt >= progressPublishInterval {
+            lastProgressPublishAt = now
+
+            let time = mediaPlayer.time
+            let length = mediaPlayer.media?.length
+            let newCurrentMs = Int64(time.intValue)
+            let newDurationMs = Int64(length?.intValue ?? 0)
+
+            // Only publish if changed
+            if newCurrentMs != currentTimeMs || newDurationMs != durationMs {
+                DispatchQueue.main.async { [weak self] in
+                    self?.currentTimeMs = newCurrentMs
+                    self?.durationMs = newDurationMs
+                }
             }
-        }
-        // Fallback: if we reach the end threshold, try to advance once
-        if newDurationMs > 0 && newCurrentMs >= newDurationMs - 500 && !didAdvanceForCurrent {
-            didAdvanceForCurrent = true
-            QueueManager.shared.playNextIfAvailable()
-        }
-        let size = mediaPlayer.videoSize
-        if size.width > 0 && size.height > 0 && size != videoSize {
-            DispatchQueue.main.async { [weak self] in
-                self?.videoSize = size
+
+            // Fallback: if we reach the end threshold, try to advance once
+            if newDurationMs > 0 && newCurrentMs >= newDurationMs - 500 && !didAdvanceForCurrent {
+                didAdvanceForCurrent = true
+                QueueManager.shared.playNextIfAvailable()
+            }
+
+            // Lazily update video size once known
+            let size = mediaPlayer.videoSize
+            if size.width > 0 && size.height > 0 && size != videoSize {
+                DispatchQueue.main.async { [weak self] in
+                    self?.videoSize = size
+                }
             }
         }
     }
 
     func attach(to view: VLCVideoView) {
-        mediaPlayer.drawable = view
+        if mediaPlayer.drawable as? VLCVideoView !== view {
+            mediaPlayer.drawable = view
+        }
     }
 
     func openAndPlayFromPanel() {
@@ -167,8 +190,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         mediaPlayer.play()
         NotificationCenter.default.post(name: .showPlayer, object: nil)
         
-        // Apply preferred track immediately after starting playback
-        // This ensures the user's track preference is maintained when switching songs
+        // Apply preferred track shortly after starting playback
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.applyPreferredTrackIfPossible()
         }
@@ -180,8 +202,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             if let size = self?.mediaPlayer.videoSize, size.width > 0 && size.height > 0 {
                 self?.videoSize = size
             }
-            // Ensure global volume is applied after media is ready
-            self?.applyVolumeToPlayer()
+            // Volume is already applied via didSet; no extra call needed here
         }
     }
 
@@ -205,6 +226,7 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
 
     func stop() {
         userInitiatedStop = true
+        didAdvanceForCurrent = true // guard against any late .ended/.stopped
         mediaPlayer.stop()
         isPlaying = false
         currentTimeMs = 0
@@ -241,14 +263,25 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         let rawIds: [Int32] = (mediaPlayer.audioTrackIndexes as? [NSNumber])?.map { Int32(truncating: $0) } ?? []
         let rawNames: [String] = (mediaPlayer.audioTrackNames as? [String]) ?? []
 
-        // If we get a transient empty response while playing, keep previous values and retry shortly
+        // If we get a transient empty response while playing, keep previous values and retry once later
         if mediaPlayer.isPlaying && rawIds.isEmpty && rawNames.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                self?.refreshAudioTracks()
+            if !pendingTrackRefreshRetry {
+                pendingTrackRefreshRetry = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    self?.pendingTrackRefreshRetry = false
+                    self?.refreshAudioTracks()
+                }
             }
             logAudioTracks(context: "refresh-skip-empty")
             return
         }
+
+        // If nothing changed since last refresh, avoid publishing
+        if rawIds == lastRawAudioTrackIds && rawNames == lastRawAudioTrackNames {
+            return
+        }
+        lastRawAudioTrackIds = rawIds
+        lastRawAudioTrackNames = rawNames
 
         // Align names to ids length, then filter out invalid ids and the built-in "Disable" entry
         let alignedNames = Array(rawNames.prefix(rawIds.count))
@@ -264,14 +297,16 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             filteredNames.append(name)
         }
 
-        audioTrackIds = filteredIds
-        audioTrackNames = filteredNames
+        // Only assign if changed to minimize SwiftUI updates
+        if filteredIds != audioTrackIds { audioTrackIds = filteredIds }
+        if filteredNames != audioTrackNames { audioTrackNames = filteredNames }
 
         // Update current selection from main player state
         let current: Int32 = mediaPlayer.currentAudioTrackIndex
-        currentAudioTrackId = current >= 0 ? current : nil
-
-        // Do not force default here; defer to preferred track application
+        let newCurrent = current >= 0 ? current : nil
+        if newCurrent != currentAudioTrackId {
+            currentAudioTrackId = newCurrent
+        }
 
         logAudioTracks(context: "refresh")
     }
@@ -345,8 +380,6 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         lastAudioLogSignature = signature
         lastAudioLogAt = now
     }
-
-    // Single-player approach: no sync timer needed
 }
 
 struct VLCVideoContainerView: NSViewRepresentable {
