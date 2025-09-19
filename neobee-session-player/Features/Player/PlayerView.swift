@@ -41,12 +41,12 @@ struct PlayerView: View {
             }
         }
         .background(PlayerBackgroundGradient())
-        .cornerRadius(isEmbedded ? 12 : 0)
+        .cornerRadius(isEmbedded ? DesignSystem.Sizes.cornerRadius : 0)
         .onHover { hovering in
             isHovering = hovering
             if !isFullScreen {
                 // Simple opacity change without animation for better performance
-                controlsOpacity = hovering ? 1.0 : 0.7
+                controlsOpacity = hovering ? DesignSystem.Opacity.controlNormal : DesignSystem.Opacity.controlHover
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in
@@ -69,8 +69,11 @@ struct PlayerView: View {
     }
     
     private func showControlsWithAutoHide() {
-        if !showControls {
+        // 如果控件已经显示，不需要重复操作
+        if showControls {
+            return
         }
+        
         showControls = true
         controlsOpacity = 1.0
         
@@ -80,7 +83,7 @@ struct PlayerView: View {
     
     private func startHideTimer() {
         hideControlsTimer?.invalidate()
-        hideControlsTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+        hideControlsTimer = Timer.scheduledTimer(withTimeInterval: DesignSystem.Animation.autoHideDelay, repeats: false) { _ in
             if isFullScreen {
                 // Simple hide without animation for better performance
                 showControls = false
