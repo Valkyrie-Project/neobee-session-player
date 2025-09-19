@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+import Combine
 
 final class MenuBarManager: ObservableObject {
     static let shared = MenuBarManager()
@@ -15,6 +16,8 @@ final class MenuBarManager: ObservableObject {
     @Published var isPlaying: Bool = false
     @Published var currentSongTitle: String = "无歌曲"
     @Published var currentArtist: String = ""
+    
+    private var cancellables = Set<AnyCancellable>()
     
     private init() {
         setupMenuBar()
@@ -31,38 +34,29 @@ final class MenuBarManager: ObservableObject {
     // MARK: - Player State Observation
     
     private func observePlayerChanges() {
-        // Observe VLCPlayerController changes
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(playerStateChanged),
-            name: .init("PlayerStateChanged"),
-            object: nil
-        )
-        
-        // Update status periodically
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.updatePlayerState()
-        }
-    }
-    
-    private func updatePlayerState() {
         let controller = VLCPlayerController.shared
         
-        DispatchQueue.main.async { [weak self] in
-            self?.isPlaying = controller.isPlaying
-            
-            // Update current song info
-            if let url = controller.currentURL {
-                let nameWithoutExtension = url.deletingPathExtension().lastPathComponent
-                self?.currentSongTitle = nameWithoutExtension
-                self?.currentArtist = "" // You can extract artist info if available
-            } else {
-                self?.currentSongTitle = "无歌曲"
-                self?.currentArtist = ""
+        // Reactively mirror isPlaying and currentURL, no polling
+        controller.$isPlaying
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] playing in
+                self?.isPlaying = playing
             }
-            
-            // Player state updated
-        }
+            .store(in: &cancellables)
+        
+        controller.$currentURL
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] url in
+                if let url {
+                    let nameWithoutExtension = url.deletingPathExtension().lastPathComponent
+                    self?.currentSongTitle = nameWithoutExtension
+                    self?.currentArtist = "" // You can extract artist info if available
+                } else {
+                    self?.currentSongTitle = "无歌曲"
+                    self?.currentArtist = ""
+                }
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Actions
@@ -109,7 +103,7 @@ final class MenuBarManager: ObservableObject {
     }
     
     @objc private func playerStateChanged() {
-        updatePlayerState()
+        // No-op; we now update reactively via Combine
     }
 }
 
@@ -131,12 +125,6 @@ extension MenuBarManager {
         let aboutItem = NSMenuItem(title: "关于 NeoBee KTV播放器", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = MenuBarManager.shared
         appMenu.addItem(aboutItem)
-        
-        appMenu.addItem(NSMenuItem.separator())
-        
-        let preferencesItem = NSMenuItem(title: "偏好设置...", action: #selector(showPreferences), keyEquivalent: ",")
-        preferencesItem.target = MenuBarManager.shared
-        appMenu.addItem(preferencesItem)
         
         appMenu.addItem(NSMenuItem.separator())
         
@@ -255,11 +243,6 @@ extension MenuBarManager {
         alert.runModal()
     }
     
-    @objc private func showPreferences() {
-        // TODO: Implement preferences window
-        print("Show preferences")
-    }
-    
     @objc private func hideApp() {
         NSApp.hide(nil)
     }
@@ -289,33 +272,8 @@ extension MenuBarManager {
     }
     
     @objc private func showHelp() {
-        // Show help using a simple alert for now to avoid crashes
-        let alert = NSAlert()
-        alert.messageText = "NeoBee KTV播放器 - 帮助"
-        alert.informativeText = """
-        基本操作：
-        • 空格键：播放/暂停
-        • F键：全屏切换
-        • ESC键：退出全屏
-        • Cmd+O：添加歌单
-        • Cmd+F：搜索歌曲
-        • Cmd+,：偏好设置
-        • Cmd+Q：退出应用
-        
-        音轨选择：
-        • 点击"原唱"按钮播放带人声版本
-        • 点击"伴奏"按钮播放纯伴奏版本
-        
-        歌单管理：
-        • 点击"添加歌单"选择音乐文件夹
-        • 在搜索框输入歌曲名称或艺人
-        • 点击"清理歌单"清空当前歌单
-        
-        支持格式：MKV, MPG
-        """
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "确定")
-        alert.runModal()
+        // 改为发通知，由主界面以 SwiftUI Sheet 弹出帮助视图（非阻塞）
+        NotificationCenter.default.post(name: .init("ShowHelpRequested"), object: nil)
     }
     
     @objc private func importFolder() {
