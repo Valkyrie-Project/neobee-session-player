@@ -20,13 +20,15 @@ struct neobee_session_playerApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .environmentObject(ErrorHandler.shared)
+                .overlay(ErrorAlertView())
                 .onReceive(NotificationCenter.default.publisher(for: .showPlayer)) { _ in
                     showPlayerWindow = true
                 }
                 .onAppear { 
                     restoreSecurityScopedBookmarks()
                     // Give a small delay to ensure bookmarks are restored before loading queue
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + DesignSystem.Animation.bookmarkRestoreDelay) {
                     }
                 }
         }
@@ -53,7 +55,7 @@ struct neobee_session_playerApp: App {
                                                                      includingResourceValuesForKeys: nil,
                                                                      relativeTo: nil) {
                                 folder.bookmark = newBookmark
-                                try? context.save()
+                                try context.save()
                             }
                         }
                         
@@ -61,10 +63,18 @@ struct neobee_session_playerApp: App {
                         _ = url.startAccessingSecurityScopedResource()
                         
                     } catch {
+                        ErrorHandler.shared.handle(
+                            AppError.fileAccessDenied(folder.folderURL ?? "未知路径"),
+                            context: "恢复安全作用域书签"
+                        )
                     }
                 }
             }
         } catch {
+            ErrorHandler.shared.handle(
+                AppError.coreDataError("无法获取库文件夹列表"),
+                context: "恢复安全作用域书签"
+            )
         }
     }
     
@@ -76,6 +86,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             if let window = NSApplication.shared.windows.first {
                 window.title = "NeoBee KTV播放器"
+                // Enforce a minimum window size so control panel is not occluded
+                let minWidth = DesignSystem.Sizes.playerMinWidth + DesignSystem.Sizes.libraryMinWidth + DesignSystem.Spacing.windowGutter
+                let minHeight = DesignSystem.Sizes.minWindowHeight
+                window.minSize = NSSize(width: minWidth, height: minHeight)
+                window.contentMinSize = NSSize(width: minWidth, height: minHeight)
             }
         }
     }
