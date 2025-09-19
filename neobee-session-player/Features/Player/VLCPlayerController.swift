@@ -166,6 +166,13 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
         mediaPlayer.media = media
         mediaPlayer.play()
         NotificationCenter.default.post(name: .showPlayer, object: nil)
+        
+        // Apply preferred track immediately after starting playback
+        // This ensures the user's track preference is maintained when switching songs
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.applyPreferredTrackIfPossible()
+        }
+        
         // Refresh tracks shortly after playback starts
         DispatchQueue.main.asyncAfter(deadline: .now() + DesignSystem.Animation.trackRefreshDelay) { [weak self] in
             self?.refreshAudioTracks()
@@ -173,7 +180,6 @@ final class VLCPlayerController: NSObject, ObservableObject, VLCMediaPlayerDeleg
             if let size = self?.mediaPlayer.videoSize, size.width > 0 && size.height > 0 {
                 self?.videoSize = size
             }
-            self?.applyPreferredTrackIfPossible()
             // Ensure global volume is applied after media is ready
             self?.applyVolumeToPlayer()
         }
