@@ -19,15 +19,12 @@
 
 - **原唱/伴奏切换**: 支持双音轨文件的音轨切换
 - **已点歌曲管理**: 显示当前播放和队列中的歌曲，支持删除和"顶到下一首"操作
-- **进度控制**: 可拖拽的播放进度条，支持精确跳转
-- **全局音量**: 音量设置会保持到下一首歌
 - **全屏模式**: 沉浸式的 KTV 包房体验
 
 ### 📁 文件支持
 
 - **格式支持**: 专门支持 MKV 和 MPG 格式（国内 KTV 标准格式）
 - **库管理**: 可添加多个文件夹到音乐库
-- **智能扫描**: 自动扫描并识别支持的文件格式
 
 ## 🛠 技术栈
 
@@ -35,8 +32,6 @@
 - **框架**: SwiftUI + AppKit
 - **媒体播放**: VLCKit
 - **数据存储**: CoreData
-- **依赖管理**: CocoaPods
-- **测试**: Swift Testing
 
 ## 📋 系统要求
 
@@ -128,6 +123,7 @@ neobee-session-player/
 ├── create_dmg.sh               # 构建和分发脚本
 ├── neobee-session-player/
 │   ├── App/                     # 应用入口
+│   │   └── neobee_session_playerApp.swift
 │   ├── Features/
 │   │   ├── Player/             # 播放器相关组件
 │   │   │   ├── PlayerView.swift          # 主播放器视图
@@ -141,6 +137,8 @@ neobee-session-player/
 │   │   ├── LibraryScanner.swift         # 库扫描服务
 │   │   └── Persistence.swift            # CoreData 配置
 │   └── Views/                  # 主要视图
+│       ├── ContentView.swift
+│       └── LibraryListView.swift
 ├── neobee-session-playerTests/ # 单元测试
 ├── Podfile                     # CocoaPods 依赖
 └── README.md                   # 项目文档
@@ -161,18 +159,13 @@ xcodebuild test -workspace neobee-session-player.xcworkspace \
 
 - ✅ 队列管理逻辑
 - ✅ 文件格式验证
-- ✅ URL 处理逻辑
-- ✅ UI 状态管理
-- ✅ 音轨选择逻辑
+- ✅ 播放器控制逻辑
 
 ## 📝 开发日志
 
 ### 主要特性
 
 - **队列管理**: 已点歌曲区域，支持删除和"顶到下一首"操作
-- **播放控制**: 进度条拖拽和全局音量控制
-- **UI 优化**: 单行控制布局，优化视频显示区域
-- **测试覆盖**: 全面的单元测试确保代码质量
 - **自动化构建**: 一键构建脚本，自动处理依赖和分发
 
 ## 📄 许可证
