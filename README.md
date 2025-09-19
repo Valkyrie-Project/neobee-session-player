@@ -1,6 +1,6 @@
-# Neobee KTV Session Player
+# NeoBee KTV Session Player
 
-一个专为 macOS 设计的 KTV 风格播放器，旨在为 Mac 用户提供类似国内 KTV 的娱乐体验。
+一个专为 macOS 设计的专业 KTV 风格视频播放器，专门为拥有大量中国 KTV 资源的全球用户提供完美的唱歌体验。
 
 ## 🎤 项目背景
 
@@ -12,6 +12,7 @@
 - 提供类似 KTV 包房的用户界面和交互体验
 - 支持原唱/伴奏切换功能
 - 提供流畅的全屏播放体验
+- 服务全球华人社区和 KTV 爱好者
 
 ## ✨ 主要特性
 
@@ -46,7 +47,7 @@
 1. **获取项目**
 
    ```bash
-   git clone https://github.com/Valkyrie-Project/neobee-session-player.git
+   git clone [your-repo-url]
    cd neobee-ktv-session/neobee-session-player
    ```
 
@@ -118,7 +119,7 @@
 ### 分发给朋友
 
 1. **直接发送 DMG 文件**：将生成的 DMG 文件发送给朋友
-2. **GitHub Releases**：上传 DMG 到 GitHub Releases 页面
+2. **官网发布**：上传 DMG 到官网下载页面
 3. **安装说明**：
    - 双击 DMG 文件
    - 将 app 拖拽到 Applications 文件夹
