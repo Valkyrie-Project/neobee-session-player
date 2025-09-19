@@ -52,6 +52,12 @@ final class LibraryScanner: ObservableObject, @unchecked Sendable {
             QueueManager.shared.clearQueue()
             
         } catch {
+            Task { @MainActor in
+                ErrorHandler.shared.handle(
+                    AppError.coreDataError("清理数据库失败"),
+                    context: "清理歌单"
+                )
+            }
         }
     }
     
@@ -61,11 +67,32 @@ final class LibraryScanner: ObservableObject, @unchecked Sendable {
         folder.id = UUID()
         folder.folderURL = url.path
         // Save security-scoped bookmark so files stay accessible after relaunch
-        if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
+        do {
+            let bookmark = try url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
             folder.bookmark = bookmark
+        } catch {
+            Task { @MainActor in
+                ErrorHandler.shared.handle(
+                    AppError.fileAccessDenied(url.path),
+                    context: "创建安全作用域书签"
+                )
+            }
         }
         folder.createdAt = Date()
-        do { try viewContext.save() } catch { }
+        
+        do {
+            try viewContext.save()
+        } catch {
+            Task { @MainActor in
+                ErrorHandler.shared.handle(
+                    AppError.coreDataError("保存文件夹信息失败"),
+                    context: "添加歌单"
+                )
+                self.isScanning = false
+            }
+            return
+        }
+        
         Task.detached(priority: .userInitiated) {
             await self.scanFolderAsync(url: url)
             await MainActor.run { self.isScanning = false }
@@ -74,8 +101,8 @@ final class LibraryScanner: ObservableObject, @unchecked Sendable {
 
     private func scanFolderAsync(url: URL) async {
         let fm = FileManager.default
-        // 支持的视频：常见KTV容器
-        let exts = ["mkv","mpg","mp4","avi","mov","mpeg"]
+        // 支持的视频：仅限 KTV 常用容器
+        let exts = ["mkv","mpg"]
         let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
         var newSongs: [(URL, String,String?,String?)] = []
         while let file = enumerator?.nextObject() as? URL {
@@ -90,23 +117,43 @@ final class LibraryScanner: ObservableObject, @unchecked Sendable {
                 let fr: NSFetchRequest<Song> = Song.fetchRequest()
                 let normalizedPath = entry.0.path
                 fr.predicate = NSPredicate(format: "fileURL == %@", normalizedPath)
-                if let existing = (try? viewContext.fetch(fr))?.first {
-                    // 如果标题为空则更新标题
-                    if (existing.title ?? "").isEmpty { existing.title = entry.1 }
-                    if existing.artist == nil { existing.artist = entry.2 }
-                    if existing.album == nil { existing.album = entry.3 }
-                } else {
-                    let s = Song(context: viewContext)
-                    s.id = UUID()
-                    s.fileURL = normalizedPath
-                    s.title = entry.1
-                    s.artist = entry.2
-                    s.album = entry.3
-                    s.duration = 0  // 不需要时长，设为0
-                    s.addedAt = Date()
+                
+                do {
+                    if let existing = try viewContext.fetch(fr).first {
+                        // 如果标题为空则更新标题
+                        if (existing.title ?? "").isEmpty { existing.title = entry.1 }
+                        if existing.artist == nil { existing.artist = entry.2 }
+                        if existing.album == nil { existing.album = entry.3 }
+                    } else {
+                        let s = Song(context: viewContext)
+                        s.id = UUID()
+                        s.fileURL = normalizedPath
+                        s.title = entry.1
+                        s.artist = entry.2
+                        s.album = entry.3
+                        s.duration = 0  // 不需要时长，设为0
+                        s.addedAt = Date()
+                    }
+                } catch {
+                    Task { @MainActor in
+                        ErrorHandler.shared.handle(
+                            AppError.coreDataError("查询歌曲信息失败"),
+                            context: "扫描文件夹"
+                        )
+                    }
                 }
             }
-            do { try viewContext.save() } catch { }
+            
+            do {
+                try viewContext.save()
+            } catch {
+                Task { @MainActor in
+                    ErrorHandler.shared.handle(
+                        AppError.coreDataError("保存扫描结果失败"),
+                        context: "扫描文件夹"
+                    )
+                }
+            }
         }
     }
 
