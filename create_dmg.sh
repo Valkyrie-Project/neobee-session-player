@@ -34,6 +34,21 @@ else
     echo "✅ Dependencies already installed"
 fi
 
+# 运行测试
+echo "Running tests before build..."
+xcodebuild test -workspace neobee-session-player.xcworkspace \
+                -scheme neobee-session-player \
+                -destination 'platform=macOS' \
+                -derivedDataPath ./build
+
+# 检查测试是否成功
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed! Build aborted."
+    exit 1
+fi
+
+echo "✅ All tests passed! Proceeding with build..."
+
 # 构建Release版本
 echo "Building Release version..."
 xcodebuild -workspace neobee-session-player.xcworkspace \
