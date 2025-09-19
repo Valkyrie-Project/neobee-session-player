@@ -12,6 +12,8 @@ struct PlayerView: View {
     @State private var isHovering = false
     @State private var isFullScreen = false
     @State private var hideControlsTimer: Timer?
+    // 非阻塞帮助面板开关
+    @State private var isShowingHelp = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -66,6 +68,19 @@ struct PlayerView: View {
                 showControlsWithAutoHide()
             }
         }
+        .onDisappear {
+            // 清理定时器，避免潜在泄漏或越界回调
+            hideControlsTimer?.invalidate()
+            hideControlsTimer = nil
+        }
+        // 非阻塞的帮助面板（Sheet）
+        .sheet(isPresented: $isShowingHelp) {
+            HelpView()
+        }
+        // 监听菜单栏发出的帮助请求
+        .onReceive(NotificationCenter.default.publisher(for: .init("ShowHelpRequested"))) { _ in
+            isShowingHelp = true
+        }
     }
     
     private func showControlsWithAutoHide() {
@@ -90,11 +105,8 @@ struct PlayerView: View {
             }
         }
     }
-    
 }
 
 #Preview {
     PlayerView(isEmbedded: false)
 }
-
-
