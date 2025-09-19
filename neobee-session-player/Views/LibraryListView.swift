@@ -4,17 +4,23 @@ import CoreData
 struct LibraryListView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Song.addedAt, ascending: false)],
-        animation: .default)
-    private var songs: FetchedResults<Song>
-
+    @FetchRequest private var songs: FetchedResults<Song>
     let query: String
+
+    init(query: String) {
+        self.query = query
+        let sort = [NSSortDescriptor(keyPath: \Song.addedAt, ascending: false)]
+        let predicate = LibraryListView.makePredicate(for: query)
+        _songs = FetchRequest<Song>(
+            sortDescriptors: sort,
+            predicate: predicate,
+            animation: .default
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Songs list
-            List(filteredSongs) { song in
+            List(songs) { song in
                 HStack {
                     VStack(alignment: .leading) {
                         Text(song.title ?? "Untitled")
@@ -35,29 +41,24 @@ struct LibraryListView: View {
                     Button("删除这首", role: .destructive) { deleteSong(song) }
                 }
             }
-            
-            // Queue display area
             Divider()
             QueueDisplayView()
                 .padding()
         }
+        // Rebuild the view with a new FetchRequest when query changes by reinitializing the view
+        // Caller (ContentView) already re-renders LibraryListView(query:) when query changes.
     }
 
-    private var filteredSongs: [Song] {
-        guard !query.isEmpty else { return Array(songs) }
-        let q = query.lowercased()
-        return songs.filter { s in
-            let t = (s.title ?? "").lowercased()
-            let a = (s.artist ?? "").lowercased()
-            return t.contains(q) || a.contains(q)
-        }
+    private static func makePredicate(for query: String) -> NSPredicate? {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return NSPredicate(format: "(title CONTAINS[c] %@) OR (artist CONTAINS[c] %@)", trimmed, trimmed)
     }
 
     private func metaLine(for song: Song) -> String {
         let parts = [song.artist, song.album].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.joined(separator: " · ")
     }
-
 
     private func revealInFinder(_ song: Song) {
         guard let path = song.fileURL else { return }
@@ -77,48 +78,34 @@ struct LibraryListView: View {
     }
 
     private func play(_ song: Song) {
-        guard let path = song.fileURL else { 
+        guard let path = song.fileURL else {
             ErrorHandler.shared.handle(
                 AppError.fileNotFound("歌曲文件路径为空"),
                 context: "播放歌曲"
             )
-            return 
-        }
-        let url = URL(fileURLWithPath: path)
-        
-        // Verify file exists before playing
-        if !FileManager.default.fileExists(atPath: path) {
-            ErrorHandler.shared.handle(
-                AppError.fileNotFound(path),
-                context: "播放歌曲"
-            )
             return
         }
-        
+        let url = URL(fileURLWithPath: path)
+        if !FileManager.default.fileExists(atPath: path) {
+            ErrorHandler.shared.handle(AppError.fileNotFound(path), context: "播放歌曲")
+            return
+        }
         VLCPlayerController.shared.play(url: url)
         QueueManager.shared.replaceQueue(with: [url])
     }
 
     private func addToQueue(_ song: Song) {
-        guard let path = song.fileURL else { 
+        guard let path = song.fileURL else {
             ErrorHandler.shared.handle(
                 AppError.fileNotFound("歌曲文件路径为空"),
                 context: "添加到播放列表"
             )
-            return 
-        }
-        let url = URL(fileURLWithPath: path)
-        
-        // Verify file exists before adding to queue
-        if !FileManager.default.fileExists(atPath: path) {
-            ErrorHandler.shared.handle(
-                AppError.fileNotFound(path),
-                context: "添加到播放列表"
-            )
             return
         }
-        
-        QueueManager.shared.enqueue(url)
+        if !FileManager.default.fileExists(atPath: path) {
+            ErrorHandler.shared.handle(AppError.fileNotFound(path), context: "添加到播放列表")
+            return
+        }
+        QueueManager.shared.enqueue(URL(fileURLWithPath: path))
     }
 }
-
