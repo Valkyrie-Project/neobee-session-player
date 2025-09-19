@@ -15,14 +15,14 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6A1539022E71A500005BDA9D"
-               BuildableName = "NeoBee KTV播放器.app"
+               BuildableName = "NeoBee KTV&#x64ad;&#x653e;&#x5668;.app"
                BlueprintName = "neobee-session-player"
                ReferencedContainer = "container:neobee-session-player.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
-  <TestAction
+   <TestAction
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
@@ -33,7 +33,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6A1539152E71A501005BDA9D"
-               BuildableName = "NeoBee KTV播放器.xctest"
+               BuildableName = "neobee-session-playerTests.xctest"
                BlueprintName = "neobee-session-playerTests"
                ReferencedContainer = "container:neobee-session-player.xcodeproj">
             </BuildableReference>
@@ -43,7 +43,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6A15391F2E71A501005BDA9D"
-               BuildableName = "NeoBee KTV播放器.xctest"
+               BuildableName = "neobee-session-playerUITests.xctest"
                BlueprintName = "neobee-session-playerUITests"
                ReferencedContainer = "container:neobee-session-player.xcodeproj">
             </BuildableReference>
@@ -65,7 +65,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6A1539022E71A500005BDA9D"
-            BuildableName = "NeoBee KTV播放器.app"
+            BuildableName = "NeoBee KTV&#x64ad;&#x653e;&#x5668;.app"
             BlueprintName = "neobee-session-player"
             ReferencedContainer = "container:neobee-session-player.xcodeproj">
          </BuildableReference>
@@ -82,7 +82,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6A1539022E71A500005BDA9D"
-            BuildableName = "NeoBee KTV播放器.app"
+            BuildableName = "NeoBee KTV&#x64ad;&#x653e;&#x5668;.app"
             BlueprintName = "neobee-session-player"
             ReferencedContainer = "container:neobee-session-player.xcodeproj">
          </BuildableReference>
