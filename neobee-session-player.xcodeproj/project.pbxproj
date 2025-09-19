@@ -586,7 +586,7 @@
                 PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/MacOS/$(PRODUCT_NAME)";
+                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeoBee KTV播放器.app/Contents/MacOS/NeoBee KTV播放器";
 			};
 			name = Debug;
 		};
@@ -604,7 +604,7 @@
                 PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).app/Contents/MacOS/$(PRODUCT_NAME)";
+                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeoBee KTV播放器.app/Contents/MacOS/NeoBee KTV播放器";
 			};
 			name = Release;
 		};
