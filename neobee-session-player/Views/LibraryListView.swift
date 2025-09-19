@@ -66,15 +66,32 @@ struct LibraryListView: View {
 
     private func deleteSong(_ song: Song) {
         viewContext.delete(song)
-        try? viewContext.save()
+        do {
+            try viewContext.save()
+        } catch {
+            ErrorHandler.shared.handle(
+                AppError.coreDataError("删除歌曲失败: \(error.localizedDescription)"),
+                context: "删除歌曲"
+            )
+        }
     }
 
     private func play(_ song: Song) {
-        guard let path = song.fileURL else { return }
+        guard let path = song.fileURL else { 
+            ErrorHandler.shared.handle(
+                AppError.fileNotFound("歌曲文件路径为空"),
+                context: "播放歌曲"
+            )
+            return 
+        }
         let url = URL(fileURLWithPath: path)
         
         // Verify file exists before playing
         if !FileManager.default.fileExists(atPath: path) {
+            ErrorHandler.shared.handle(
+                AppError.fileNotFound(path),
+                context: "播放歌曲"
+            )
             return
         }
         
@@ -83,11 +100,21 @@ struct LibraryListView: View {
     }
 
     private func addToQueue(_ song: Song) {
-        guard let path = song.fileURL else { return }
+        guard let path = song.fileURL else { 
+            ErrorHandler.shared.handle(
+                AppError.fileNotFound("歌曲文件路径为空"),
+                context: "添加到播放列表"
+            )
+            return 
+        }
         let url = URL(fileURLWithPath: path)
         
         // Verify file exists before adding to queue
         if !FileManager.default.fileExists(atPath: path) {
+            ErrorHandler.shared.handle(
+                AppError.fileNotFound(path),
+                context: "添加到播放列表"
+            )
             return
         }
         
