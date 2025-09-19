@@ -22,12 +22,32 @@
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
-   <TestAction
+  <TestAction
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6A1539152E71A501005BDA9D"
+               BuildableName = "NeoBee KTV播放器.xctest"
+               BlueprintName = "neobee-session-playerTests"
+               ReferencedContainer = "container:neobee-session-player.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "6A15391F2E71A501005BDA9D"
+               BuildableName = "NeoBee KTV播放器.xctest"
+               BlueprintName = "neobee-session-playerUITests"
+               ReferencedContainer = "container:neobee-session-player.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
