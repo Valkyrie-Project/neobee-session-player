@@ -35,8 +35,8 @@
 		40A330A2C975470D06715E07 /* Pods-neobee-session-playerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-neobee-session-playerTests.release.xcconfig"; path = "Target Support Files/Pods-neobee-session-playerTests/Pods-neobee-session-playerTests.release.xcconfig"; sourceTree = "<group>"; };
 		5AD5E18CC3FD7E7055E717A8 /* Pods-Pods-neobee-session-player-neobee-session-player.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Pods-neobee-session-player-neobee-session-player.release.xcconfig"; path = "Target Support Files/Pods-Pods-neobee-session-player-neobee-session-player/Pods-Pods-neobee-session-player-neobee-session-player.release.xcconfig"; sourceTree = "<group>"; };
 		6A1539032E71A500005BDA9D /* NeoBee KTV播放器.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NeoBee KTV播放器.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A1539162E71A501005BDA9D /* NeoBee KTV播放器.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NeoBee KTV播放器.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A1539202E71A501005BDA9D /* NeoBee KTV播放器.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "NeoBee KTV播放器.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A1539162E71A501005BDA9D /* neobee-session-playerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "neobee-session-playerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A1539202E71A501005BDA9D /* neobee-session-playerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "neobee-session-playerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		79CCBA44879E6FB777F0307F /* Pods_neobee_session_playerUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_neobee_session_playerUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A490363AA1318DB3F74258D /* Pods-neobee-session-playerUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-neobee-session-playerUITests.debug.xcconfig"; path = "Target Support Files/Pods-neobee-session-playerUITests/Pods-neobee-session-playerUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		9BD3C36D947D73D0F54466C3 /* Pods_Pods_neobee_session_player_neobee_session_player.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Pods_neobee_session_player_neobee_session_player.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -106,8 +106,8 @@
 			isa = PBXGroup;
 			children = (
 				6A1539032E71A500005BDA9D /* NeoBee KTV播放器.app */,
-				6A1539162E71A501005BDA9D /* NeoBee KTV播放器.xctest */,
-				6A1539202E71A501005BDA9D /* NeoBee KTV播放器.xctest */,
+				6A1539162E71A501005BDA9D /* neobee-session-playerTests.xctest */,
+				6A1539202E71A501005BDA9D /* neobee-session-playerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -179,7 +179,7 @@
 			);
 			name = "neobee-session-playerTests";
 			productName = "neobee-session-playerTests";
-			productReference = 6A1539162E71A501005BDA9D /* NeoBee KTV播放器.xctest */;
+			productReference = 6A1539162E71A501005BDA9D /* neobee-session-playerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		6A15391F2E71A501005BDA9D /* neobee-session-playerUITests */ = {
@@ -201,7 +201,7 @@
 			);
 			name = "neobee-session-playerUITests";
 			productName = "neobee-session-playerUITests";
-			productReference = 6A1539202E71A501005BDA9D /* NeoBee KTV播放器.xctest */;
+			productReference = 6A1539202E71A501005BDA9D /* neobee-session-playerUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -212,7 +212,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					6A1539022E71A500005BDA9D = {
 						CreatedOnToolsVersion = 16.4;
@@ -434,6 +434,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -458,6 +459,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -497,6 +499,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -514,6 +517,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -528,8 +532,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -555,8 +562,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -579,14 +589,15 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerTests";
-                PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeoBee KTV播放器.app/Contents/MacOS/NeoBee KTV播放器";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeoBee KTV播放器.app/Contents/MacOS/NeoBee KTV播放器";
 			};
 			name = Debug;
 		};
@@ -597,14 +608,15 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerTests";
-                PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-                TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeoBee KTV播放器.app/Contents/MacOS/NeoBee KTV播放器";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NeoBee KTV播放器.app/Contents/MacOS/NeoBee KTV播放器";
 			};
 			name = Release;
 		};
@@ -614,10 +626,11 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerUITests";
-                PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TEST_TARGET_NAME = "neobee-session-player";
@@ -630,10 +643,11 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerUITests";
-                PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "haoranzhang.neobee-session-playerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TEST_TARGET_NAME = "neobee-session-player";
