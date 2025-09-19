@@ -92,6 +92,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.minSize = NSSize(width: minWidth, height: minHeight)
                 window.contentMinSize = NSSize(width: minWidth, height: minHeight)
             }
+            
+            // Initialize menu bar manager
+            _ = MenuBarManager.shared
+            
+            // Customize application menu bar
+            MenuBarManager.customizeApplicationMenu()
         }
     }
     

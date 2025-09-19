@@ -67,6 +67,15 @@ struct ContentView: View {
             // No animation for better performance
             isFullScreen = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: .init("AddFolderRequested"))) { _ in
+            libraryScanner.addFolder()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .init("ClearLibraryRequested"))) { _ in
+            libraryScanner.clearDatabase()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .init("FocusSearchRequested"))) { _ in
+            // Focus search field - this will be handled by the search field itself
+        }
         .onAppear {
             // Check initial full screen state
             isFullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) ?? false
